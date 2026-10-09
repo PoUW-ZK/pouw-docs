@@ -36,11 +36,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Internal links
-        uses: lycheeverse/lychee-action@v2
-        with:
-          args: >-
-            --offline --no-progress
-            --exclude-path node_modules --exclude-path _site --exclude-path report
+        run: |
+          curl -sSfL https://github.com/lycheeverse/lychee/releases/download/lychee-v0.24.2/lychee-x86_64-unknown-linux-gnu.tar.gz \
+            | tar xz --strip-components=1 lychee-x86_64-unknown-linux-gnu/lychee
+          ./lychee --offline --no-progress \
+            --exclude-path node_modules --exclude-path _site --exclude-path report \
             './**/*.md'
 
   site:
