@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  markdown:
+    name: Markdown and spelling
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Markdown formatting
+        run: npm run lint
+      - name: Spelling
+        run: npm run spell
+
+  links:
+    name: Links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Internal links
+        run: |
+          docker run --rm -v "$PWD:/input" -w /input lycheeverse/lychee:latest \
+            --offline --no-progress \
+            --exclude-path node_modules --exclude-path _site --exclude-path report \
+            './**/*.md'
+
+  site:
+    name: Site build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./
+          destination: ./_site
+
+  files:
+    name: Large files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No files over 5 MB
+        run: |
+          big=$(find . -path ./.git -prune -o -type f -size +5M -print)
+          if [ -n "$big" ]; then
+            echo "::error::Files larger than 5 MB belong in GitHub Releases, not in the repository:"

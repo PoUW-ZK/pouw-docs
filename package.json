@@ -1,0 +1,13 @@
+{
+  "name": "pouw-docs",
+  "private": true,
+  "scripts": {
+    "lint": "markdownlint-cli2",
+    "spell": "cspell --no-progress --show-suggestions \"**/*.md\""
+  },
+  "devDependencies": {
+    "@cspell/dict-sk-sk": "^1.1.7",
+    "cspell": "^10.3.6",
+    "markdownlint-cli2": "^0.23.3"
+  }
+}

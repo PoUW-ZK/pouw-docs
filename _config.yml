@@ -1,0 +1,52 @@
+title: PoUW-ZK
+description: Dokumentácia tímového projektu PoUW-ZK (Tím 27)
+lang: sk-SK
+
+remote_theme: just-the-docs/just-the-docs@v0.10.0
+plugins:
+  - jekyll-remote-theme
+  - jekyll-relative-links
+  - jekyll-seo-tag
+
+relative_links:
+  enabled: true
+  collections: false
+
+search_enabled: true
+heading_anchors: true
+back_to_top: true
+back_to_top_text: "Späť hore"
+
+aux_links:
+  "GitHub": ["https://github.com/PoUW-ZK"]
+  "Kanban": ["https://github.com/orgs/PoUW-ZK/projects/1"]
+aux_links_new_tab: true
+
+gh_edit_link: true
+gh_edit_link_text: "Upraviť túto stránku na GitHube"
+gh_edit_repository: "https://github.com/PoUW-ZK/pouw-docs"
+gh_edit_branch: "main"
+gh_edit_view_mode: "edit"
+
+mermaid:
+  version: "10.9.1"
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+
+exclude:
+  - README.md
+  - report/
+  - node_modules/
+  - package.json
+  - package-lock.json
+  - Gemfile
+  - Gemfile.lock
+  - vendor/
+  - .cspell/
+  - .cspell.json
+  - .markdownlint-cli2.jsonc
+  - .lycheeignore
