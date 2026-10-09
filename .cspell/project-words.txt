@@ -85,3 +85,10 @@ indexeru
 hash
 hashov
 hashu
+# Slovak words missing from the dictionary
+cloude
+# GitHub usernames
+Faustynn
+Ddystopia
+Quolen
+ymarochok

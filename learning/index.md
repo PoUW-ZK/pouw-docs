@@ -11,4 +11,4 @@ Poznámky z onboardingu a k článku [SNARKChain](https://arxiv.org/abs/2510.097
 - `learning/snarkchain/` — poznámky a prezentácie ku kapitolám článku
 - `learning/<meno>/` — osobné poznámky
 
-Poznámky píš vlastnými slovami, nie kopírovaním textu z článkov hej 
+Poznámky píš vlastnými slovami, nie kopírovaním textu z článkov hej
