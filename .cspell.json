@@ -1,0 +1,16 @@
+{
+  "version": "0.2",
+  "language": "en,sk",
+  "import": ["@cspell/dict-sk-sk/cspell-ext.json"],
+  "dictionaryDefinitions": [
+    { "name": "project-words", "path": "./.cspell/project-words.txt", "addWords": true }
+  ],
+  "dictionaries": ["project-words"],
+  "ignorePaths": ["node_modules/**", "_site/**", "report/**", "vendor/**", "package-lock.json"],
+  "ignoreRegExpList": ["markdown-code-block", "markdown-inline-code", "front-matter-keys"],
+  "patterns": [
+    { "name": "markdown-code-block", "pattern": "/^\\s*```[\\s\\S]*?^\\s*```/gm" },
+    { "name": "markdown-inline-code", "pattern": "/`[^`\\n]+`/g" },
+    { "name": "front-matter-keys", "pattern": "/^(title|parent|nav_order|nav_exclude|has_children|permalink):/gm" }
+  ]
+}
