@@ -17,6 +17,7 @@ Každé dôležité technické rozhodnutie zapíšeme ako ADR, aby sme sa k nemu
 | ADR | Rozhodnutie |
 | --- | --- |
 | [ADR-0006](0006-tri-dokazovacie-systemy.md) | Groth16, PLONK over KZG and Marlin as the three proving systems |
+| [ADR-0007](0007-ulozene-a-odvodene-polia.md) | stored and derived fields of Block and ProofTx |
 
 ## Prijaté rozhodnutia
 
