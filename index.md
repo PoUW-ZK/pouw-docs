@@ -20,6 +20,7 @@ zero-knowledge dôkazy pre klientov. Projekt vychádza z článku
 | [Tím](tim.md) | členovia a ich role |
 | [Architektúra](architecture/index.md) | komponenty systému a ich prepojenie |
 | [Kontrakty](contracts/index.md) | spoločné formáty dát a API medzi komponentmi |
+| [Server](server/index.md) | staging server, Jenkins, CI/CD, nasadenie a prevádzka |
 | [Rozhodnutia (ADR)](decisions/index.md) | prečo sme sa rozhodli tak, ako sme sa rozhodli |
 | [Zápisnice](meetings/index.md) | záznamy zo stretnutí tímu a konzultácií |
 | [Študijné poznámky](learning/index.md) | poznámky z onboardingu a k článku SNARKChain |
