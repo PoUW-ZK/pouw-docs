@@ -34,15 +34,6 @@ Three things constrain the choice:
 - The fee and the lottery weight are computed from a complexity measure of the
   circuit before proving. The measure must therefore be readable from the
   circuit file.
-- The research part of the assignment compares the systems on resistance to
-  amortization (and on prices and storage). Two proving systems usually differ
-  in several properties at once, for example in how the setup is done and in
-  how circuits are written as equations. If we measure that one system is
-  easier to amortize than another, we want to know which of those properties
-  causes it. That is only possible if the two systems differ in that one
-  property and are the same in the others. So we pick the systems in pairs
-  that differ in exactly one property.
-
 Terms used below:
 
 - **Setup** is a one-time step that produces the prover key and the verifier
@@ -76,8 +67,7 @@ with the other two.
 
 1. **Groth16 + PLONK over KZG + Marlin**
    - pros: every proof is at most 1008 B and is verified in 2.4 to 8.7 ms
-     regardless of the circuit size. Each pair of systems changes exactly one
-     axis (the setup model or the arithmetization). All three run on the same
+     regardless of the circuit size. All three run on the same
      hardware, and Groth16 and Marlin both take R1CS, so circuits from Circom
      work.
    - cons: all three are pairing-based SNARKs, so there is no system without a
@@ -94,9 +84,7 @@ with the other two.
      VI-2 and raise the network overhead that the Efficiency condition, Sec.
      III, asks to keep low). The complexity is known only after the program
      runs, so the fee cannot be determined in advance. Different hardware,
-     a different circuit language and a different field. It changes the setup,
-     the arithmetization, the field and the proof size at once, so differences
-     cannot be attributed to one cause.
+     a different circuit language and a different field.
 3. **Groth16 + PLONK + Spartan**
    - pros: no setup, takes R1CS, already built and measured.
    - cons: the proof is 156 KB at 200k constraints and grows as the square
@@ -108,8 +96,8 @@ with the other two.
    - cons: C++ through FFI and the circuit language Noir. Among the proving
      systems for Noir, the current `bb` CLI offers only UltraHonk, whose
      proofs grow as the logarithm of the circuit size (breaks Sec. VI-2). It
-     is again a PLONKish system with a universal SRS, so compared with
-     dusk-plonk it changes no axis and adds nothing to the comparison.
+     is again a PLONKish system with a universal SRS, so it would be a second
+     variant of PLONK rather than a different kind of system.
 
 ## Decision
 
@@ -123,10 +111,6 @@ Where this choice wins:
   transaction has a fixed maximum size. With 100 proofs in a block this is at
   most 0.9 s of verification per node, while with STARK proofs the proofs alone
   would take 5 to 25 MB.
-- **Attribution of causes.** Groth16 and Marlin differ only in the setup model
-  (both R1CS). Marlin and PLONK differ only in the arithmetization (both
-  universal KZG). If amortization, the error of the price estimate or the
-  storage requirements differ, we can say why.
 - **Price.** The complexity measure is the number of rows, non-zero entries or
   gates, directly in the circuit file. Registration can determine the fee
   before proving.

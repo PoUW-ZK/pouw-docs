@@ -102,20 +102,17 @@ is computed. For R1CS it is the number of rows and non-zero entries of the
 matrices, for PLONK the number of gates. The same program has a different count
 in every arithmetization, so each system needs its own scaling factor.
 
-### Why exactly these three
+### Why these three
 
-| pair | setup | arithmetization | what can be read from the difference |
-| --- | --- | --- | --- |
-| Groth16 and Marlin | different | same (R1CS) | the effect of the setup model |
-| Marlin and PLONK | same (universal KZG) | different | the effect of the arithmetization |
-| Groth16 and PLONK | different | different | nothing unambiguous |
-
-Each axis changes one at a time. If amortization, the error of the price
-estimate or the storage requirement differ between Groth16 and Marlin, the
-cause is the setup. If they differ between Marlin and PLONK, the cause is the
-arithmetization. A third system of the STARK type would change the setup, the
-arithmetization, the field and the class of the proof size at once, so no
-difference could be attributed to one of them.
+- All three keep the proof size and the verification time constant (Sec. VI-2,
+  Asymmetry in Sec. VI-3).
+- Together they cover both setup models the registry has to support (per
+  circuit and universal) and both ways of writing circuits (R1CS and PLONKish
+  gates), so the prover interface of the node is built for both from the start.
+- Marlin takes the same R1CS circuits as Groth16 (from Circom), without a
+  ceremony for each circuit.
+- All three provers spend most of their time in MSM and FFT over a field of
+  about 256 bits, so they run well on the same hardware.
 
 **KZG** is a polynomial commitment: a short fingerprint of a polynomial that
 can later be opened at any point with a short proof. It uses the SRS and a
@@ -419,8 +416,7 @@ Miden.
    192 KiB) instead of 128 B to 1 KB, and a verification that grows with the
    size of the computation (breaks Asymmetry, Sec. VI-3, and the proof size
    breaks Sec. VI-2). Every node pays this, and it does not satisfy VI-2.
-5. **Attribution of causes and maturity.** STARK would change four things at
-   once (see above). The libraries change quickly: Plonky3 has a stable version
+5. **Maturity.** The libraries change quickly: Plonky3 has a stable version
    0.8.0 and already 0.9.0-rc.1, Miden VM is in the alpha state according to its
    README, and SP1 and RISC Zero change the proof format between major versions.
 
