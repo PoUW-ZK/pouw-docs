@@ -149,7 +149,7 @@ parser needs it before it can decode the rest.
   formula go to `block.md`, listed in [Kontrakty](../contracts/index.md).
 - Open point: the rule that decides k is missing from the paper. Until it is
   agreed, validators cannot check the k in a header. See the issue on buckets
-  and the 51% problem (link to be added).
+  and the 51% problem ([#11](https://github.com/PoUW-ZK/pouw-docs/issues/11)).
 - Open point: if one miner mines in two buckets in parallel, both blocks may
   use the same next counter value for the same circuit, and the order of the
   counter is then unclear.
