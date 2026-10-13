@@ -1,13 +1,14 @@
 ---
 title: Proving systems
-parent: Architektúra
+parent: "ADR-0006: Three proving systems"
+grand_parent: Rozhodnutia (ADR)
 nav_order: 1
 ---
 
 # Proving systems: analysis of the choice
 
 This page is the background for the proposed
-[ADR-0006](../decisions/0006-tri-dokazovacie-systemy.md): Groth16, PLONK over
+[ADR-0006](../0006-tri-dokazovacie-systemy.md): Groth16, PLONK over
 KZG and Marlin. It is also written for readers who do not work with proofs
 (indexer, dashboard, deployment). Every term is explained at its first use.
 

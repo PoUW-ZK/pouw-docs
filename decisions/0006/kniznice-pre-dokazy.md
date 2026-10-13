@@ -1,6 +1,7 @@
 ---
 title: Proof libraries
-parent: Architektúra
+parent: "ADR-0006: Three proving systems"
+grand_parent: Rozhodnutia (ADR)
 nav_order: 2
 ---
 
@@ -8,7 +9,7 @@ nav_order: 2
 
 This page compares the libraries and circuit languages from which the prover
 and the verifier of the node can be built. The choice of the three systems is in
-[ADR-0006](../decisions/0006-tri-dokazovacie-systemy.md). The explanation of
+[ADR-0006](../0006-tri-dokazovacie-systemy.md). The explanation of
 terms (circuit, R1CS, PLONKish, SRS, setup) and the measurements are on the page
 [Proving systems](dokazovacie-systemy.md).
 

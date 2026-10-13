@@ -2,6 +2,7 @@
 title: "ADR-0006: Three proving systems"
 parent: Rozhodnutia (ADR)
 nav_order: 6
+has_children: true
 ---
 
 # ADR-0006: Groth16, PLONK over KZG and Marlin as the three proving systems
@@ -33,9 +34,14 @@ Three things constrain the choice:
 - The fee and the lottery weight are computed from a complexity measure of the
   circuit before proving. The measure must therefore be readable from the
   circuit file.
-- The research part of the assignment studies resistance to amortization
-  across systems. We want to be able to attribute a difference measured
-  between two systems to a single property of theirs.
+- The research part of the assignment compares the systems on resistance to
+  amortization (and on prices and storage). Two proving systems usually differ
+  in several properties at once, for example in how the setup is done and in
+  how circuits are written as equations. If we measure that one system is
+  easier to amortize than another, we want to know which of those properties
+  causes it. That is only possible if the two systems differ in that one
+  property and are the same in the others. So we pick the systems in pairs
+  that differ in exactly one property.
 
 Terms used below:
 
@@ -58,13 +64,15 @@ Terms used below:
   work.
 
 The detailed analysis and measurements are on the page
-[Proving systems](../architecture/dokazovacie-systemy.md), the comparison of
+[Proving systems](0006/dokazovacie-systemy.md), the comparison of
 libraries is on the page
-[Proof libraries](../architecture/kniznice-pre-dokazy.md).
+[Proof libraries](0006/kniznice-pre-dokazy.md).
 
 ## Options
 
 All options contain Groth16 and PLONK. They differ in the third system.
+Pros and cons are focused on either the third option or how it integrates
+with the other two.
 
 1. **Groth16 + PLONK over KZG + Marlin**
    - pros: every proof is at most 1008 B and is verified in 2.4 to 8.7 ms
@@ -105,8 +113,8 @@ All options contain Groth16 and PLONK. They differ in the third system.
 
 ## Decision
 
-**Proposed**, the team still has to approve it: Groth16 (ark-groth16), PLONK
-over KZG (dusk-plonk) and Marlin (a port of ark-marlin to arkworks 0.5).
+**Proposed**, the team still has to approve it: Groth16 (crate ark-groth16), PLONK
+over KZG (crate dusk-plonk) and Marlin (a port of ark-marlin to arkworks 0.5).
 
 Where this choice wins:
 
@@ -140,8 +148,6 @@ Where this choice wins:
 - We need to decide whether the registry stores proving keys (up to 1.2 GB per
   circuit at 200k constraints) or only verification keys, and each miner
   recomputes the proving key (61.5 s for PLONK, 64.0 s for Marlin).
-- The lottery weight needs a scaling factor for each system. It must also take
-  into account the expensive Marlin prover.
 - We take Marlin from our fork of ark-marlin, because the last upstream commit
   is from 2022-08-29. The fork adds 249 and removes 179 lines in a source tree
   of 2,971 lines (a port to arkworks 0.5 and a linear division). Maintenance
@@ -153,12 +159,6 @@ Where this choice wins:
 - If Marlin does not accept circuits from Circom, the fallback is Varuna from
   snarkVM. If the team rejects a third pairing-based system, the fallback is
   Spartan.
-- A system without a setup (for example STARK) can be added later as a fourth
-  one, once the node architecture is stable. It does not replace any of the
-  three.
-- Missing before approval: Marlin with a circuit from Circom, the prover entry
-  point of Varuna, measurements of all three on the same curve, and repeated
-  runs.
 
 ## Illustrative example tasks
 
