@@ -175,3 +175,10 @@ arithmetization
 Esplora
 Blockscout
 Subscan
+electrs
+Envio
+Hasura
+Metabase
+Polkadot
+serde
+Subsquid
