@@ -12,6 +12,12 @@ Každé dôležité technické rozhodnutie zapíšeme ako ADR, aby sme sa k nemu
 2. Vyplň ho a otvor pull request.
 3. Po schválení tímom zmeň stav na **prijaté**.
 
+## Navrhnuté rozhodnutia
+
+| ADR | Rozhodnutie |
+| --- | --- |
+| [ADR-0006](0006-tri-dokazovacie-systemy.md) | Groth16, PLONK over KZG and Marlin as the three proving systems |
+
 ## Prijaté rozhodnutia
 
 | ADR | Rozhodnutie |
