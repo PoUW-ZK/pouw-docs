@@ -58,7 +58,7 @@ We adopt **Option 2**. The [pouw-dashboard](https://github.com/PoUW-ZK/pouw-dash
     - *Coin Transfers:* `tx_hash`, `from`, `to`, `amount`, `fee`.
     - *Block Proof Transactions (Proof Chain):* Itemized list of all proofs forming the winning miner's proof chain ($\pi_1 \dots \pi_n$), showing `tx_hash`, `circuit_id`, `fee`, `client`, and `usage_counter`.
 - **Data Source:** Direct query against `blocks`, `coin_transactions`, and `proof_transactions` PostgreSQL tables via Hasura.
-- **Deferred (Post-v0):** Collapsable "Lottery Breakdown" drawer displaying discarded losing proofs from competing miners, near-misses, and candidate trials for that round.
+- **Deferred (Post-v0):** Collapsible "Lottery Breakdown" drawer displaying discarded losing proofs from competing miners, near-misses, and candidate trials for that round.
 
 #### 3. Coin Transaction Detail Screen (`/tx/coin/:hash`)
 
@@ -115,7 +115,7 @@ We adopt **Option 2**. The [pouw-dashboard](https://github.com/PoUW-ZK/pouw-dash
 
 ### For Frontend (@ymarochok)
 
-1. **API Layer Selection:** Is pure GraphQL over Hasura acceptable for [pouw-dashboard](https://github.com/PoUW-ZK/pouw-dashboard), or do you require Hasura's built-in RESTified endpoints (where Hasura automatically exposes REST routes mapped to stored GraphQL queries)?
+1. **API Layer Selection:** Is pure GraphQL over Hasura acceptable for [pouw-dashboard](https://github.com/PoUW-ZK/pouw-dashboard), or do you require Hasura's built-in REST endpoints (where Hasura automatically exposes REST routes mapped to stored GraphQL queries)?
 
 ### For Node & Protocol (@IliaPoliak / @Ddystopia)
 
