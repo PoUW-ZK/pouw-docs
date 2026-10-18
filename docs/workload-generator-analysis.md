@@ -11,7 +11,7 @@ users and presents live execution metrics in a web UI.
 
 Features to borrow:
 
-- **Scriptable scenarios:** Keep scenario definitions expressive and easy to
+- **Programmable scenarios:** Keep scenario definitions expressive and easy to
   extend, while allowing reusable task-generation logic.
 - **Distributed testing:** Support multiple generator workers coordinated by a
   controller for larger workloads.
@@ -52,7 +52,7 @@ Screenshot placeholder: `[Insert Screenshot of Apache JMeter UI here]`
 ## Recommendations
 
 The Rust generator should combine YAML-based scenario configuration with
-scriptable task construction, explicit arrival models, and structured metrics.
+programmable task construction, explicit arrival models, and structured metrics.
 Tokio provides the asynchronous runtime needed for high request rates, while a
 modular HTTP client keeps node-specific behavior isolated. A future web API
 can expose scenario control and metrics to a dashboard, and distributed worker
