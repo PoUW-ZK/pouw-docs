@@ -1,0 +1,181 @@
+openapi: 3.0.0
+info:
+  title: Workload Generator API
+  version: 1.0.0
+  description: API for controlling the workload generator and retrieving test results.
+servers:
+  - url: http://localhost:8080
+    description: Local workload generator
+paths:
+  /scenarios:
+    get:
+      summary: List available scenarios
+      operationId: listScenarios
+      responses:
+        '200':
+          description: Available scenario names.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScenarioList'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /start:
+    post:
+      summary: Start a workload scenario
+      operationId: startScenario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartScenarioRequest'
+      responses:
+        '202':
+          description: Scenario accepted for execution.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Another scenario is already running.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /stop:
+    post:
+      summary: Stop the running scenario
+      operationId: stopScenario
+      responses:
+        '202':
+          description: Stop request accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        '409':
+          description: No scenario is currently running.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /status:
+    get:
+      summary: Get generator status and statistics
+      operationId: getStatus
+      responses:
+        '200':
+          description: Current generator status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratorStatus'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /results:
+    get:
+      summary: Download test results
+      operationId: downloadResults
+      responses:
+        '200':
+          description: CSV file containing test results.
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: No results are available.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ScenarioList:
+      type: object
+      required:
+        - scenarios
+      properties:
+        scenarios:
+          type: array
+          description: Names of scenarios available to run.
+          items:
+            type: string
+          example:
+            - test
+            - sustained-load
+    StartScenarioRequest:
+      type: object
+      required:
+        - scenario_name
+      properties:
+        scenario_name:
+          type: string
+          description: Name of the scenario to start.
+          minLength: 1
+          example: test
+    OperationResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: Scenario started
+    GeneratorStatus:
+      type: object
+      required:
+        - status
+        - sent_tasks
+        - included_tasks
+        - rejected_tasks
+        - avg_time_to_inclusion
+      properties:
+        status:
+          type: string
+          description: Current generator state.
+          enum:
+            - running
+            - stopped
+            - error
+        sent_tasks:
+          type: integer
+          format: int64
+          minimum: 0
+        included_tasks:
+          type: integer
+          format: int64
+          minimum: 0
+        rejected_tasks:
+          type: integer
+          format: int64
+          minimum: 0
+        avg_time_to_inclusion:
+          type: number
+          format: double
+          minimum: 0
+          description: Average time from task submission to inclusion, in seconds.
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+  responses:
+    BadRequest:
+      description: Invalid request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: Internal server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
