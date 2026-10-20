@@ -182,3 +182,6 @@ Metabase
 Polkadot
 serde
 Subsquid
+maturin
+wasmtime
+precomputation
