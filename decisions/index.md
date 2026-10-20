@@ -29,3 +29,4 @@ Každé dôležité technické rozhodnutie zapíšeme ako ADR, aby sme sa k nemu
 | [ADR-0003](0003-hesla-v-pass.md) | heslá v `pass`, do kontajnerov ako súbory |
 | [ADR-0004](0004-vecerny-deploy-na-staging.md) | večerné nasadenie na staging iba po úspešných testoch |
 | [ADR-0005](0005-https-cez-caddy.md) | HTTPS cez Caddy a sslip.io, ostatné porty iba lokálne |
+| [ADR-0010](0010-adr-lahky-klient.md) | light client as a Rust crate of pouw-node, used by the workload generator |
