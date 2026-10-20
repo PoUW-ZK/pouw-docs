@@ -1,0 +1,852 @@
+# Review status: pending. Tracked in ~/school/tp/REVIEW.md
+openapi: 3.1.0
+info:
+  title: PoUW-ZK node API
+  version: 1.0.0
+  description: |
+    REST API of a PoUW-ZK full node. Blocks, headers and transactions are
+    served as borsh (`application/octet-stream`) by default. The same
+    endpoints serve a JSON view on `Accept: application/json`.
+    `POST /v1/txs` takes borsh or JSON. Both decode to the same bytes and
+    no hash or signature is computed over JSON text.
+    Explanation of the flows: node-api.md. Event log detail: node-events.md.
+    Status: proposed.
+servers:
+  - url: http://localhost:8080
+    description: Local node (example)
+security: []
+tags:
+  - name: transactions
+  - name: chain
+  - name: registry
+  - name: state
+  - name: events
+  - name: operations
+paths:
+  /v1/txs:
+    post:
+      tags: [transactions]
+      operationId: submitTx
+      summary: Submit a signed transaction
+      description: |
+        The body is the borsh bytes of a SignedTx or its JSON form without
+        `txid`. A body that does not decode answers 400. The node decodes JSON
+        into the same structure, encodes it to borsh, and checks the signature
+        and computes the txid over those bytes. The JSON text is never hashed.
+        The node checks signature, chain id, nonce, balance, limits and
+        circuit existence, then puts the transaction in the mempool.
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+              description: Borsh bytes of a SignedTx, 157 bytes or more.
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignedTxInput'
+      responses:
+        '202':
+          description: Accepted into the mempool.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [txid]
+                properties:
+                  txid:
+                    $ref: '#/components/schemas/TxId'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '422': {$ref: '#/components/responses/Rejected'}
+  /v1/txs/{txid}:
+    get:
+      tags: [transactions]
+      operationId: getTx
+      summary: Read a transaction and its status
+      description: |
+        A txid the node has never seen answers 404. Derived fields appear
+        for an included proof request.
+      parameters:
+        - $ref: '#/components/parameters/TxIdPath'
+      responses:
+        '200':
+          description: The transaction, as borsh or as the JSON view.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+                description: Borsh bytes of the SignedTx.
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TxView'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/txs/{txid}/inclusion-proof:
+    get:
+      tags: [transactions]
+      operationId: getInclusionProof
+      summary: Merkle inclusion proof of an included transaction
+      parameters:
+        - $ref: '#/components/parameters/TxIdPath'
+      responses:
+        '200':
+          description: The inclusion proof.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InclusionProof'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/blocks/head:
+    get:
+      tags: [chain]
+      operationId: getHead
+      summary: Header of the tip of the chain
+      responses:
+        '200':
+          description: The tip header, as borsh or as the JSON view.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+                description: Borsh bytes of the BlockHeader.
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeaderView'
+  /v1/blocks/{height_or_hash}:
+    get:
+      tags: [chain]
+      operationId: getBlock
+      summary: Full decoded block
+      parameters:
+        - $ref: '#/components/parameters/HeightOrHashPath'
+      responses:
+        '200':
+          description: The block, as borsh or as the JSON view.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+                description: Borsh bytes of the Block.
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Block'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/blocks/{height_or_hash}/header:
+    get:
+      tags: [chain]
+      operationId: getBlockHeader
+      summary: Header of one block
+      parameters:
+        - $ref: '#/components/parameters/HeightOrHashPath'
+      responses:
+        '200':
+          description: The header, as borsh or as the JSON view with its hash.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+                description: Borsh bytes of the BlockHeader.
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeaderView'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/blocks:
+    get:
+      tags: [chain]
+      operationId: listBlocks
+      summary: Blocks in a height range (bulk read for the indexer)
+      description: |
+        At most 100 blocks per call. JSON answers a list of block views.
+        `Accept: application/octet-stream` answers the borsh blocks one
+        after another, each prefixed by its length as a u32 (little-endian).
+      parameters:
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+      responses:
+        '200':
+          description: Blocks in ascending height order.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+                description: Borsh blocks, each prefixed by a u32 length.
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [blocks]
+                properties:
+                  blocks:
+                    type: array
+                    maxItems: 100
+                    items:
+                      $ref: '#/components/schemas/Block'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '422': {$ref: '#/components/responses/Rejected'}
+  /v1/headers:
+    get:
+      tags: [chain]
+      operationId: listHeaders
+      summary: Headers in a height range (light clients)
+      description: At most 1000 headers per call. JSON only, as a list of header views.
+      parameters:
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+      responses:
+        '200':
+          description: Headers in ascending height order.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [headers]
+                properties:
+                  headers:
+                    type: array
+                    maxItems: 1000
+                    items:
+                      $ref: '#/components/schemas/HeaderView'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '422': {$ref: '#/components/responses/Rejected'}
+  /v1/circuits:
+    get:
+      tags: [registry]
+      operationId: listCircuits
+      summary: Circuit registry entries
+      parameters:
+        - $ref: '#/components/parameters/Include'
+      responses:
+        '200':
+          description: All registered circuits.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [circuits]
+                properties:
+                  circuits:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CircuitEntry'
+        '400': {$ref: '#/components/responses/BadRequest'}
+  /v1/circuits/{circuit_id}:
+    get:
+      tags: [registry]
+      operationId: getCircuit
+      summary: One circuit registry entry
+      parameters:
+        - name: circuit_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/CircuitId'
+        - $ref: '#/components/parameters/Include'
+      responses:
+        '200':
+          description: The registry entry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitEntry'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/accounts/{addr}:
+    get:
+      tags: [state]
+      operationId: getAccount
+      summary: Balance and nonce of an address
+      description: An address the chain has not seen answers 404.
+      parameters:
+        - name: addr
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Address'
+      responses:
+        '200':
+          description: The account.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/mempool:
+    get:
+      tags: [state]
+      operationId: getMempool
+      summary: Pending transactions
+      responses:
+        '200':
+          description: Txids and counts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mempool'
+  /v1/events:
+    get:
+      tags: [events]
+      operationId: getEvents
+      summary: Pull events from the node event log (long-poll)
+      description: |
+        Returns events with `seq` greater than `after`. The first seq is 1.
+        A `limit` or `wait_ms` above the maximum is lowered to it. When there is
+        nothing new, the node holds the request up to `wait_ms`. A cursor
+        older than the retained window answers 410. Detail: node-events.md.
+      parameters:
+        - name: after
+          in: query
+          required: false
+          schema: {type: integer, minimum: 0, maximum: 18446744073709551615, default: 0}
+          description: Last seq the caller processed. 0 reads from the start.
+        - name: limit
+          in: query
+          required: false
+          schema: {type: integer, minimum: 1, maximum: 1000, default: 100}
+        - name: wait_ms
+          in: query
+          required: false
+          schema: {type: integer, minimum: 0, maximum: 30000, default: 0}
+      responses:
+        '200':
+          description: Events in ascending seq order, possibly empty.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [events, next]
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+                  next:
+                    type: integer
+                    minimum: 0
+                    maximum: 18446744073709551615
+                    description: Seq of the last returned event, or `after` when `events` is empty.
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '410':
+          description: The cursor is older than the retained window.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/node:
+    get:
+      tags: [operations]
+      operationId: getNode
+      summary: Node identity and state
+      responses:
+        '200':
+          description: Node info.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeInfo'
+  /health:
+    get:
+      tags: [operations]
+      operationId: getHealth
+      summary: Liveness
+      responses:
+        '200':
+          description: The node serves requests.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+  /metrics:
+    get:
+      tags: [operations]
+      operationId: getMetrics
+      summary: Prometheus metrics
+      description: |
+        Prometheus text format. The node emits at least the height, the
+        mempool size, the peer count and a verification duration histogram.
+        Names are owned by metrics.md.
+      responses:
+        '200':
+          description: Metrics.
+          content:
+            text/plain:
+              schema:
+                type: string
+components:
+  parameters:
+    TxIdPath:
+      name: txid
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/TxId'
+    HeightOrHashPath:
+      name: height_or_hash
+      in: path
+      required: true
+      description: A decimal height or a block hash with the `blk:` prefix.
+      schema:
+        type: string
+        pattern: '^([0-9]{1,20}|blk:[0-9a-f]{64})$'
+        minLength: 1
+        maxLength: 68
+        examples: ['12', 'blk:dd532958f6a2a903a20f7f7923be98a644f600624193f181ddfe31cb4f53b8b7']
+    From:
+      name: from
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/Height'
+    To:
+      name: to
+      in: query
+      required: true
+      description: Inclusive. A `to` above the tip is cut to the tip.
+      schema:
+        $ref: '#/components/schemas/Height'
+    Include:
+      name: include
+      in: query
+      required: false
+      description: '`keys` adds `verifying_key` and `circuit`.'
+      schema:
+        type: string
+        enum: [keys]
+  responses:
+    BadRequest:
+      description: Malformed request (bad id, undecodable borsh, bad parameter).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Rejected:
+      description: Rejected by the rules (bad signature, bad nonce, insufficient balance, unknown circuit, over a limit).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Unknown id.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    TxId:
+      type: string
+      pattern: '^tx:[0-9a-f]{64}$'
+      minLength: 67
+      maxLength: 67
+      description: sha256 of the borsh bytes of a SignedTx.
+      examples: ['tx:4804e3ae090e3fb82de9a66aca0543c39d1ffff786133871f382ed612053687a']
+    BlockHash:
+      type: string
+      pattern: '^blk:[0-9a-f]{64}$'
+      minLength: 68
+      maxLength: 68
+      description: sha256 of the borsh bytes of a BlockHeader.
+      examples: ['blk:dd532958f6a2a903a20f7f7923be98a644f600624193f181ddfe31cb4f53b8b7']
+    ProofHash:
+      type: string
+      pattern: '^proof:[0-9a-f]{64}$'
+      minLength: 70
+      maxLength: 70
+      description: sha256 of the borsh bytes of a ProofTx. The Merkle leaf id of a proof tx.
+      examples: ['proof:26a854c7af0a340d5e77269a060fdd235f856c56c90830da9fc0aaea6f967563']
+    CircuitId:
+      type: string
+      pattern: '^circ:[0-9a-f]{64}$'
+      minLength: 69
+      maxLength: 69
+      description: The txid hash of the RegisterCircuit transaction.
+      examples: ['circ:710347f25bec15b1dce6bed71a7ab719739f0011cda6830e5eb7d3d01b000590']
+    Address:
+      type: string
+      pattern: '^addr:[0-9a-f]{64}$'
+      minLength: 69
+      maxLength: 69
+      description: An Ed25519 public key.
+      examples: ['addr:8fac0a4f4ac266a66249d7c30853b8aafefa405e9f2603b0f820100f34296e29']
+    Hash32:
+      type: string
+      pattern: '^[0-9a-f]{64}$'
+      minLength: 64
+      maxLength: 64
+      description: A SHA-256 output as lowercase hex, without prefix.
+    Witness:
+      type: string
+      contentEncoding: base64
+      pattern: '^[A-Za-z0-9+/]*={0,2}$'
+      maxLength: 1398104
+      description: Standard base64 with padding. At most 1 MiB decoded (MAX_WITNESS_BYTES).
+    Proof:
+      type: string
+      contentEncoding: base64
+      pattern: '^[A-Za-z0-9+/]*={0,2}$'
+      maxLength: 5464
+      description: Standard base64 with padding. At most 4096 bytes decoded (MAX_PROOF_BYTES).
+    VerifyingKey:
+      type: string
+      contentEncoding: base64
+      pattern: '^[A-Za-z0-9+/]*={0,2}$'
+      maxLength: 89478488
+      description: Standard base64 with padding. At most 64 MiB decoded (MAX_CIRCUIT_BYTES).
+    CircuitBlob:
+      type: string
+      contentEncoding: base64
+      pattern: '^[A-Za-z0-9+/]*={0,2}$'
+      maxLength: 89478488
+      description: Standard base64 with padding. At most 64 MiB decoded (MAX_CIRCUIT_BYTES).
+    Signature:
+      type: string
+      contentEncoding: base64
+      pattern: '^[A-Za-z0-9+/]*={0,2}$'
+      minLength: 88
+      maxLength: 88
+      description: An Ed25519 signature, 64 bytes in base64 with padding.
+    FieldInput:
+      type: string
+      pattern: '^[0-9a-f]{62}$'
+      minLength: 62
+      maxLength: 62
+      description: |
+        A 248-bit field element input: the 31 bytes of the FieldInput verbatim, in borsh byte order (little-endian), no prefix.
+      examples: ['8dcdb5739ba01795ab4e12cb8b6406369ff7169af06a04bdac5fa26bd7bc19']
+    Amount:
+      type: integer
+      minimum: 0
+      maximum: 18446744073709551615
+      description: Smallest coin unit. A u64. Values stay below 2^53 on the test network.
+    Height:
+      type: integer
+      minimum: 0
+      maximum: 18446744073709551615
+      description: A u64. Values stay below 2^53 on the test network.
+    Nonce:
+      type: integer
+      minimum: 0
+      maximum: 18446744073709551615
+      description: Transactions sent by the sender before this one. A u64. Values stay below 2^53 on the test network.
+    UsageCounter:
+      type: integer
+      minimum: 0
+      maximum: 18446744073709551615
+      description: Proofs by this miner for this circuit before this one. A u64. Values stay below 2^53 on the test network.
+    Timestamp:
+      type: integer
+      minimum: 0
+      maximum: 18446744073709551615
+      description: Unix seconds. A u64. Values stay below 2^53 on the test network.
+    ProofSystem:
+      type: string
+      enum: [groth16, plonk_kzg, marlin]
+    TransferBody:
+      type: object
+      additionalProperties: false
+      required: [chain_id, sender, nonce, fee, kind, to, amount]
+      properties:
+        chain_id: {type: integer, minimum: 0, maximum: 4294967295}
+        sender: {$ref: '#/components/schemas/Address'}
+        nonce: {$ref: '#/components/schemas/Nonce'}
+        fee:
+          $ref: '#/components/schemas/Amount'
+          description: Paid to the miner of the including block.
+        kind: {type: string, enum: [transfer]}
+        to: {$ref: '#/components/schemas/Address'}
+        amount: {$ref: '#/components/schemas/Amount'}
+    ProofRequestBody:
+      type: object
+      additionalProperties: false
+      required: [chain_id, sender, nonce, fee, kind, circuit, public_inputs, witness]
+      properties:
+        chain_id: {type: integer, minimum: 0, maximum: 4294967295}
+        sender: {$ref: '#/components/schemas/Address'}
+        nonce: {$ref: '#/components/schemas/Nonce'}
+        fee:
+          $ref: '#/components/schemas/Amount'
+          description: Paid to the miner of the including block.
+        kind: {type: string, enum: [proof_request]}
+        circuit: {$ref: '#/components/schemas/CircuitId'}
+        public_inputs:
+          type: array
+          maxItems: 64
+          items: {$ref: '#/components/schemas/FieldInput'}
+        witness: {$ref: '#/components/schemas/Witness'}
+    RegisterCircuitBody:
+      type: object
+      additionalProperties: false
+      required: [chain_id, sender, nonce, fee, kind, system, constraint_count, verifying_key, circuit]
+      properties:
+        chain_id: {type: integer, minimum: 0, maximum: 4294967295}
+        sender: {$ref: '#/components/schemas/Address'}
+        nonce: {$ref: '#/components/schemas/Nonce'}
+        fee:
+          $ref: '#/components/schemas/Amount'
+          description: Paid to the miner of the including block.
+        kind: {type: string, enum: [register_circuit]}
+        system: {$ref: '#/components/schemas/ProofSystem'}
+        constraint_count: {type: integer, minimum: 0, maximum: 18446744073709551615}
+        verifying_key: {$ref: '#/components/schemas/VerifyingKey'}
+        circuit: {$ref: '#/components/schemas/CircuitBlob'}
+    TxBody:
+      description: One flat object. `kind` selects the variant.
+      oneOf:
+        - $ref: '#/components/schemas/TransferBody'
+        - $ref: '#/components/schemas/ProofRequestBody'
+        - $ref: '#/components/schemas/RegisterCircuitBody'
+      discriminator:
+        propertyName: kind
+        mapping:
+          transfer: '#/components/schemas/TransferBody'
+          proof_request: '#/components/schemas/ProofRequestBody'
+          register_circuit: '#/components/schemas/RegisterCircuitBody'
+    SignedTxInput:
+      type: object
+      additionalProperties: false
+      required: [body, signature]
+      description: |
+        JSON request body of `POST /v1/txs`: a SignedTx without `txid`. The
+        node decodes it into the SignedTx structure and encodes that to
+        borsh. The signature is Ed25519 over `pouw-zk/tx-sig/v1` followed by
+        the borsh bytes of the body, and the txid is computed over the borsh
+        bytes. The JSON text is never hashed.
+      properties:
+        body: {$ref: '#/components/schemas/TxBody'}
+        signature: {$ref: '#/components/schemas/Signature'}
+    SignedTx:
+      type: object
+      additionalProperties: false
+      required: [txid, body, signature]
+      description: JSON view of a SignedTx. Same as SignedTxInput plus `txid`.
+      properties:
+        txid:
+          $ref: '#/components/schemas/TxId'
+          description: Added by the view.
+        body: {$ref: '#/components/schemas/TxBody'}
+        signature: {$ref: '#/components/schemas/Signature'}
+    TxView:
+      type: object
+      additionalProperties: false
+      required: [txid, status, tx]
+      properties:
+        txid: {$ref: '#/components/schemas/TxId'}
+        status:
+          type: string
+          enum: [pending, included]
+        tx: {$ref: '#/components/schemas/SignedTx'}
+        height:
+          $ref: '#/components/schemas/Height'
+          description: Height of the including block, when included.
+        index:
+          type: integer
+          minimum: 0
+          maximum: 4294967295
+          description: Leaf index in the Merkle tree of the block, when included.
+        eta:
+          $ref: '#/components/schemas/FieldInput'
+          description: Derived. Included proof request only.
+        mask:
+          $ref: '#/components/schemas/FieldInput'
+          description: Derived. Included proof request only.
+        proof_system:
+          $ref: '#/components/schemas/ProofSystem'
+          description: Derived from the registry. Included proof request only.
+        usage_counter:
+          $ref: '#/components/schemas/UsageCounter'
+          description: Stored in the proof entry. Included proof request only.
+        proof:
+          $ref: '#/components/schemas/Proof'
+          description: Included proof request only.
+        proof_hash:
+          $ref: '#/components/schemas/ProofHash'
+          description: Included proof request only.
+    ProofTx:
+      type: object
+      additionalProperties: false
+      required: [proof_hash, request_txid, request, usage_counter, proof, eta, mask, proof_system]
+      properties:
+        proof_hash:
+          $ref: '#/components/schemas/ProofHash'
+          description: Derived. The Merkle leaf id of the proof tx.
+        request_txid:
+          $ref: '#/components/schemas/TxId'
+          description: Derived. Txid of the request.
+        request: {$ref: '#/components/schemas/SignedTx'}
+        usage_counter: {$ref: '#/components/schemas/UsageCounter'}
+        proof: {$ref: '#/components/schemas/Proof'}
+        eta:
+          $ref: '#/components/schemas/FieldInput'
+          description: Derived. The first public input of the circuit.
+        mask:
+          $ref: '#/components/schemas/FieldInput'
+          description: Derived. The second public input of the circuit.
+        proof_system:
+          $ref: '#/components/schemas/ProofSystem'
+          description: Derived from the registry entry of the circuit.
+    BlockHeader:
+      type: object
+      additionalProperties: false
+      required: [version, height, prev_hash, timestamp, miner, difficulty, bucket_count, bucket_id, tx_count, tx_root]
+      properties:
+        version: {type: integer, minimum: 1, maximum: 1}
+        height: {$ref: '#/components/schemas/Height'}
+        prev_hash: {$ref: '#/components/schemas/BlockHash'}
+        timestamp: {$ref: '#/components/schemas/Timestamp'}
+        miner: {$ref: '#/components/schemas/Address'}
+        difficulty: {type: integer, minimum: 0, maximum: 18446744073709551615}
+        bucket_count: {type: integer, minimum: 0, maximum: 4294967295}
+        bucket_id: {type: integer, minimum: 0, maximum: 4294967295}
+        tx_count: {type: integer, minimum: 0, maximum: 4294967295}
+        tx_root: {$ref: '#/components/schemas/Hash32'}
+    HeaderView:
+      type: object
+      additionalProperties: false
+      required: [hash, header]
+      properties:
+        hash: {$ref: '#/components/schemas/BlockHash'}
+        header: {$ref: '#/components/schemas/BlockHeader'}
+    Block:
+      type: object
+      additionalProperties: false
+      required: [hash, header, txs, proof_txs]
+      properties:
+        hash: {$ref: '#/components/schemas/BlockHash'}
+        header: {$ref: '#/components/schemas/BlockHeader'}
+        txs:
+          type: array
+          maxItems: 1024
+          description: Transfer and RegisterCircuit only, each with its txid.
+          items: {$ref: '#/components/schemas/SignedTx'}
+        proof_txs:
+          type: array
+          maxItems: 1024
+          items: {$ref: '#/components/schemas/ProofTx'}
+    CircuitEntry:
+      type: object
+      additionalProperties: false
+      required: [id, system, constraint_count, owner, registered_at]
+      properties:
+        id: {$ref: '#/components/schemas/CircuitId'}
+        system: {$ref: '#/components/schemas/ProofSystem'}
+        constraint_count: {type: integer, minimum: 0, maximum: 18446744073709551615}
+        owner: {$ref: '#/components/schemas/Address'}
+        registered_at: {$ref: '#/components/schemas/Height'}
+        verifying_key:
+          $ref: '#/components/schemas/VerifyingKey'
+          description: Only with `include=keys`.
+        circuit:
+          $ref: '#/components/schemas/CircuitBlob'
+          description: Only with `include=keys`.
+    Account:
+      type: object
+      additionalProperties: false
+      required: [address, balance, nonce]
+      properties:
+        address: {$ref: '#/components/schemas/Address'}
+        balance: {$ref: '#/components/schemas/Amount'}
+        nonce: {$ref: '#/components/schemas/Nonce'}
+    InclusionProof:
+      type: object
+      additionalProperties: false
+      required: [height, index, siblings]
+      description: |
+        Merkle audit path. The verifier takes the leaf id (the txid hash, or
+        the proof tx hash for a proof request) and combines it with each
+        sibling from the bottom up. The side of each sibling follows from
+        `index`. The result must equal `tx_root` of the header at `height`.
+        The algorithm is in block.md.
+      properties:
+        height: {$ref: '#/components/schemas/Height'}
+        index: {type: integer, minimum: 0, maximum: 4294967295}
+        siblings:
+          type: array
+          maxItems: 10
+          description: One hash per tree level. A block holds at most 1024 leaves.
+          items: {$ref: '#/components/schemas/Hash32'}
+    Mempool:
+      type: object
+      additionalProperties: false
+      required: [tx_count, proof_request_count, txids]
+      properties:
+        tx_count: {type: integer, minimum: 0, maximum: 4294967295}
+        proof_request_count: {type: integer, minimum: 0, maximum: 4294967295}
+        txids:
+          type: array
+          items: {$ref: '#/components/schemas/TxId'}
+    NodeInfo:
+      type: object
+      additionalProperties: false
+      required: [chain_id, version, height, peers]
+      properties:
+        chain_id: {type: integer, minimum: 0, maximum: 4294967295}
+        version:
+          type: string
+          pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
+          maxLength: 32
+          description: Semantic version of the node.
+        height: {$ref: '#/components/schemas/Height'}
+        peers: {type: integer, minimum: 0, maximum: 4294967295}
+    Event:
+      type: object
+      additionalProperties: false
+      required: [seq, time, node_id, kind, data]
+      description: |
+        Envelope of one event. The kinds and the schema of `data` for each
+        kind are in node-events.md.
+      properties:
+        seq: {type: integer, minimum: 0, maximum: 18446744073709551615}
+        time:
+          type: string
+          format: date-time
+          pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$'
+          minLength: 24
+          maxLength: 24
+          description: RFC 3339 UTC with milliseconds.
+        node_id:
+          type: string
+          pattern: '^[A-Za-z0-9._-]+$'
+          minLength: 1
+          maxLength: 64
+        kind:
+          type: string
+          pattern: '^[a-z][a-z0-9_]*$'
+          maxLength: 64
+        data:
+          type: object
+          description: Per-kind payload, defined in node-events.md.
+          additionalProperties: true
+    Error:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              pattern: '^[a-z][a-z0-9_]*$'
+              maxLength: 64
+            message: {type: string, maxLength: 1024}
+            details:
+              type: object
+              additionalProperties: false
+              description: Optional. The 410 answer of `/v1/events` has `oldest_seq`.
+              properties:
+                oldest_seq: {type: integer, minimum: 0, maximum: 18446744073709551615}

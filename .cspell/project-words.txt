@@ -150,6 +150,7 @@ Aleo
 Barretenberg
 Brakedown
 decommitment
+devnet
 EZKL
 Filecoin
 gnark
@@ -182,3 +183,9 @@ Metabase
 Polkadot
 serde
 Subsquid
+borsh
+dalek
+Celestia
+IPFS
+newtype
+txids
