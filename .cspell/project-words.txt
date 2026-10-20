@@ -187,3 +187,5 @@ borsh
 dalek
 Celestia
 IPFS
+newtype
+txids
