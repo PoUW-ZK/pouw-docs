@@ -182,3 +182,5 @@ Metabase
 Polkadot
 serde
 Subsquid
+urql
+timestamptz
