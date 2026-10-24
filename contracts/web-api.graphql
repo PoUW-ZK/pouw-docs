@@ -1,0 +1,317 @@
+# PoUW-ZK web API: the GraphQL operations of the explorer (pouw-dashboard).
+#
+# Status: proposed. Explanation, types and rules: web-api.md. Screens: ADR-0009.
+#
+# Hasura serves these over the views in the "api" schema of the indexer database:
+#   queries        POST /v1/graphql
+#   subscriptions  WebSocket /v1/graphql (graphql-transport-ws or graphql-ws)
+# No header is needed: requests without one run as the read-only role "anonymous".
+#
+# Pagination: every list is ordered newest first by `height` (blocks) or `sort_key`
+# (everything else). The first page omits `$before`. The next page passes the `height` or
+# `sort_key` of the last item it got. A page shorter than `$limit` is the last one.
+
+# ======================================================================== fragments
+
+fragment BlockRow on blocks {
+  hash
+  height
+  time
+  miner
+  transfer_count
+  registration_count
+  proof_count
+  fee_total
+}
+
+fragment TransferRow on transfers {
+  txid
+  block_hash
+  height
+  time
+  position
+  canonical
+  sender
+  recipient
+  amount
+  fee
+  nonce
+}
+
+fragment RegistrationRow on circuits {
+  txid
+  circuit_id
+  proof_system
+  constraint_count
+  registrant
+  fee
+}
+
+fragment ProofRow on proofs {
+  proof_hash
+  request_txid
+  height
+  time
+  position
+  circuit_id
+  proof_system
+  client
+  fee
+  usage_counter
+  sort_key
+}
+
+fragment CircuitRow on circuits {
+  circuit_id
+  proof_system
+  constraint_count
+  registrant
+  registered_height
+  proof_count
+  sort_key
+}
+
+# ======================================================================== 1. home
+
+# Network status card. Live: the server pushes a new result when the numbers change.
+subscription HomeStats {
+  stats {
+    indexed_height
+    latest_block_time
+    bucket_count
+    block_count
+    transfer_count
+    proof_count
+    circuit_count
+  }
+}
+
+# Latest blocks feed. Live.
+subscription LatestBlocks($limit: Int = 10) {
+  blocks(where: {canonical: {_eq: true}}, order_by: {height: desc}, limit: $limit) {
+    ...BlockRow
+  }
+}
+
+# Search bar. The prefix of q selects what is searched: digits for a height, then blk:,
+# tx:, proof:, circ:, addr:. No match is an empty list, never an error. A tx: id of a
+# proof request answers kind "proof", of a registration kind "circuit".
+query Search($q: String!) {
+  search(args: {q: $q}) {
+    kind
+    id
+    height
+  }
+}
+
+# ======================================================================== 2. block
+
+# All canonical blocks, paged, for a "blocks" list.
+query Blocks($before: bigint = 9007199254740991, $limit: Int = 20) {
+  blocks(
+    where: {canonical: {_eq: true}, height: {_lt: $before}}
+    order_by: {height: desc}
+    limit: $limit
+  ) {
+    ...BlockRow
+  }
+}
+
+fragment BlockDetail on blocks {
+  hash
+  height
+  prev_hash
+  time
+  miner
+  difficulty
+  bucket_count
+  bucket_id
+  tx_root
+  size_bytes
+  canonical
+  fee_total
+  transfers(order_by: {position: asc}) {
+    ...TransferRow
+  }
+  registrations(order_by: {sort_key: asc}) {
+    ...RegistrationRow
+  }
+  proofs(order_by: {position: asc}) {
+    ...ProofRow
+  }
+}
+
+# /block/812: the canonical block at that height.
+query BlockByHeight($height: bigint!) {
+  blocks(where: {height: {_eq: $height}, canonical: {_eq: true}}) {
+    ...BlockDetail
+  }
+}
+
+# /block/blk:...: that block, also when it is orphaned (canonical false).
+query BlockByHash($hash: String!) {
+  blocks(where: {hash: {_eq: $hash}}) {
+    ...BlockDetail
+  }
+}
+
+# ======================================================================== 3. transaction
+
+# /tx/tx:...: a txid is one of three kinds, so all three are asked at once and exactly
+# one list is not empty (a transfer has two rows when it also sits in an orphaned
+# block too; canonical comes first). A proof request leads to screen 4.
+query Transaction($txid: String!) {
+  transfers(where: {txid: {_eq: $txid}}, order_by: {canonical: desc}) {
+    ...TransferRow
+  }
+  circuits(where: {txid: {_eq: $txid}}) {
+    ...RegistrationRow
+    registered_block
+    registered_height
+    registered_time
+    canonical
+  }
+  proofs(where: {request_txid: {_eq: $txid}}, order_by: {canonical: desc}) {
+    proof_hash
+    height
+    canonical
+  }
+}
+
+# ======================================================================== 4. proof
+
+# /proof/proof:...
+query Proof($proofHash: String!) {
+  proofs(where: {proof_hash: {_eq: $proofHash}}, order_by: {canonical: desc}) {
+    ...ProofRow
+    block_hash
+    canonical
+    miner
+    constraint_count
+    nonce
+    proof_bytes
+    witness_bytes
+    witness_sha256
+    public_input_count
+    eta
+    mask
+  }
+}
+
+# ======================================================================== 5. circuits
+
+# /circuits. $filter narrows the list, for example {proof_system: {_eq: "groth16"}} or
+# {registrant: {_eq: "addr:..."}}.
+query Circuits($filter: circuits_bool_exp = {}, $before: String = "~", $limit: Int = 20) {
+  circuits(
+    where: {_and: [$filter, {canonical: {_eq: true}}, {sort_key: {_lt: $before}}]}
+    order_by: {sort_key: desc}
+    limit: $limit
+  ) {
+    ...CircuitRow
+  }
+}
+
+# /circuit/circ:...
+query Circuit($circuitId: String!) {
+  circuits(where: {circuit_id: {_eq: $circuitId}}) {
+    ...CircuitRow
+    txid
+    fee
+    verifying_key_bytes
+    circuit_bytes
+    registered_block
+    registered_time
+    canonical
+    last_proof_height
+    useful_work
+  }
+}
+
+# Proof history of one circuit, canonical blocks only.
+query CircuitProofs($circuitId: String!, $before: String = "~", $limit: Int = 20) {
+  proofs(
+    where: {circuit_id: {_eq: $circuitId}, canonical: {_eq: true}, sort_key: {_lt: $before}}
+    order_by: {sort_key: desc}
+    limit: $limit
+  ) {
+    ...ProofRow
+  }
+}
+
+# ======================================================================== 6. address
+
+# /address/addr:... An empty list means no canonical block involves the address.
+query Address($address: String!) {
+  addresses(where: {address: {_eq: $address}}) {
+    address
+    txs_sent
+    txs_received
+    proof_requests
+    circuits_registered
+    blocks_mined
+    first_seen_height
+  }
+}
+
+# Transactions of the address, seen from it: direction "in", "out" or "self".
+# $filter narrows by kind, for example {kind: {_eq: "transfer"}}.
+query AddressTxs(
+  $address: String!
+  $filter: address_txs_bool_exp = {}
+  $before: String = "~"
+  $limit: Int = 20
+) {
+  address_txs(
+    where: {_and: [$filter, {address: {_eq: $address}}, {sort_key: {_lt: $before}}]}
+    order_by: {sort_key: desc}
+    limit: $limit
+  ) {
+    direction
+    kind
+    txid
+    height
+    time
+    position
+    sender
+    recipient
+    amount
+    fee
+    nonce
+    circuit_id
+    proof_hash
+    sort_key
+  }
+}
+
+# Blocks mined by the address.
+query MinedBlocks($miner: String!, $before: bigint = 9007199254740991, $limit: Int = 20) {
+  blocks(
+    where: {miner: {_eq: $miner}, canonical: {_eq: true}, height: {_lt: $before}}
+    order_by: {height: desc}
+    limit: $limit
+  ) {
+    ...BlockRow
+  }
+}
+
+# ======================================================================== 7. mining
+
+# /mining, over all canonical blocks.
+query Mining {
+  stats {
+    block_count
+    avg_block_interval_s
+  }
+  miner_shares(order_by: {blocks: desc}) {
+    miner
+    blocks
+    share
+    last_block_height
+  }
+  useful_work(order_by: {proof_system: asc}) {
+    proof_system
+    proof_count
+    useful_work
+  }
+}
