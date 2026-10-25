@@ -1,38 +1,43 @@
 # ADR-0010: Workload Generator Architecture
 
 - **Status:** Accepted
-- **Date:** 2026-10-18
+- **Date:** 2026-10-25
 
 ## Context
 
-The project needs a synthetic client to stress-test the PoUW network and
-simulate realistic proof demand. The generator must represent multiple task
-types and arrival models, including Poisson and burst workloads, while
-remaining suitable for sustained asynchronous execution.
+We need a synthetic client to stress-test a standard Bitcoin-like L1 network
+through a light node. The generator will test read operations only; it will not
+submit writes or transactions. The client must generate controlled,
+high-concurrency requests for chain data and provide reliable measurements of
+the light node API.
 
 ## Decision
 
-We will implement the workload generator in Rust with Tokio for asynchronous
-performance and efficient task scheduling.
+We will implement the workload generator with Java 21 and Gradle.
 
 The architecture will use:
 
-- A YAML-based `Scenario` parser for names, rates, durations, arrival models,
-  and task distributions.
-- A modular `NodeClient` for HTTP requests to the node API, including a mock
-  mode for local development and testing.
-- A `WorkloadTask` payload containing the task identifier, circuit type and
-  size, proof system, fee, and client identifier.
-- A separate modeling workflow in a Python Jupyter notebook before arrival
-  models are fully implemented in the Rust loop.
+- `java.net.http.HttpClient` for asynchronous HTTP/2 requests to the light node
+  API.
+- Virtual Threads to support high concurrency with lightweight request
+  execution.
+- An open-loop scheduler that emits read operations according to the configured
+  arrival rate instead of waiting for each previous request to finish.
+- A `Semaphore` to limit the number of in-flight requests and provide
+  controlled throttling.
+- A `LightNodeClient` for reading the chain head, blocks, balances, and
+  transaction status.
+- WireMock tests against the light node API contract before the real node is
+  ready.
 
 ## Consequences
 
-Rust and Tokio provide high performance and align the generator with the core
-codebase. YAML scenarios and a modular client make the tool easy to configure
-and integrate with the node API.
+Java 21 and Virtual Threads provide high concurrency and align the generator
+with the new Java stack. Gradle provides a standard build and dependency
+workflow, while the HTTP client and modular light-node client keep transport
+and API concerns isolated.
 
-The arrival models require manual implementation and validation. Uniform
-arrival is currently supported by the execution loop; Poisson, burst, and wave
-behavior will first be modeled and compared in the Python notebook before
-being implemented in Rust.
+The generator will initially depend on the light node API contract rather than
+a live node. WireMock will provide deterministic contract-level tests for
+chain-head, block, balance, and transaction-status reads until the real node is
+ready.

@@ -1,7 +1,8 @@
 # Workload Generator Analysis
 
 This report compares three established load-testing tools and identifies
-features that are useful for the custom Rust workload generator.
+features that are useful for the custom Java 21 workload generator targeting
+L1 light node read operations.
 
 ## Locust
 
@@ -51,9 +52,16 @@ Screenshot placeholder: `[Insert Screenshot of Apache JMeter UI here]`
 
 ## Recommendations
 
-The Rust generator should combine YAML-based scenario configuration with
-programmable task construction, explicit arrival models, and structured metrics.
-Tokio provides the asynchronous runtime needed for high request rates, while a
-modular HTTP client keeps node-specific behavior isolated. A future web API
-can expose scenario control and metrics to a dashboard, and distributed worker
-coordination can be added once single-process behavior is stable.
+The Java 21 generator should combine scenario configuration with programmable
+read-operation workloads and structured metrics for L1 light node access.
+Virtual Threads provide lightweight concurrency for high request rates, while
+`java.net.http.HttpClient` supports asynchronous HTTP/2 requests without
+coupling the scheduler to a specific node implementation.
+
+An open-loop scheduler should release read operations according to the target
+arrival rate rather than waiting for previous operations to complete. A
+`Semaphore` can cap in-flight requests so the generator applies controlled
+throttling while reading chain heads, blocks, balances, and transaction status.
+A future web API can expose scenario control and metrics to a
+dashboard, and distributed worker coordination can be added once
+single-process behavior is stable.
