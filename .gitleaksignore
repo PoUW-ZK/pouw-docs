@@ -1,0 +1,2 @@
+# False positive: this is a public verifying key, not a secret.
+45767f03565cbd2bbde87bb7ebac9d136251e08c:contracts/node-api.md:generic-api-key:387
