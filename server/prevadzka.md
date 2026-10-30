@@ -62,7 +62,7 @@ Všetky heslá sú v `secrets.list`. Prečo práve `pass`, je v
 
 | Druh | Kto ho vytvorí | Príklady |
 | --- | --- | --- |
-| `random` | `pass-init.sh` | admin Grafany, admin Jenkinsu, secret webhookov |
+| `random` | `pass-init.sh`, nové aj `secrets.sh` pri nasadení | admin Grafany, používateľ Grafany v databáze, admin Jenkinsu, secret webhookov |
 | `manual` | ty, `pass insert -m` | GitHub App, OAuth App, SMTP |
 | `ssh-key` | `secrets.sh` pri každom štarte, nie je v `pass` | kľúč Jenkins → agent |
 
@@ -81,8 +81,9 @@ Samotné `make up` nestačí: kontajner drží starý súbor, kým ho niekto zno
 nevytvorí.
 
 **Nové heslo**: riadok v `secrets.list` → položka v `secrets:` v `compose.yml`
-(na najvyššej úrovni aj pri službe) → `./scripts/pass-init.sh` (vygeneruje
-`random`) alebo `pass insert -m` (`manual`) → nasadenie.
+(na najvyššej úrovni aj pri službe) → nasadenie. Heslo druhu `random`, ktoré
+ešte nie je v `pass`, vygeneruje `secrets.sh` pri nasadení sám; heslo druhu
+`manual` treba vložiť cez `pass insert -m`.
 
 **Záloha úložiska.** Úložisko je git repozitár zašifrovaný pre kľúč servera a
 kľúče správcov. Skopíruj ho na bezpečné miesto, napríklad do súkromného
@@ -104,9 +105,14 @@ Testy celej siete sú v `e2e/smoke.sh`, jedna kontrola na riadok:
 check "<popis>" <služba> '<shell príkaz, ktorý beží v kontajneri služby>'
 ```
 
-Príkaz beží cez `docker compose exec`, takže nepotrebuje porty na hostiteľovi a
-funguje lokálne, v Jenkinse aj na stagingu. Každá kontrola je jeden test v
+Príkaz beží cez `docker exec` v kontajneri služby, takže nepotrebuje porty na
+hostiteľovi a funguje lokálne, v Jenkinse aj na stagingu. Kontrola služby z
+voliteľného profilu (`network`, `host-metrics`), ktorá nebeží, sa preskočí;
+služba bez profilu, ktorá nebeží, je chyba. Každá kontrola je jeden test v
 záložke **Tests** v Jenkinse. Večerné nasadenie prebehne, iba ak prejdú všetky.
+
+Ktorý druh testu kam patrí (unit, integračné, smoke, e2e) a ako ich Jenkins
+nájde, popisuje README repozitára `pouw-deploy`, časť *Tests*.
 
 Príklady testov, ktoré dávajú zmysel, keď budú služby hotové:
 
@@ -116,8 +122,8 @@ check "indexer sees the latest block" indexer '...'
 check "workload submits a task and gets a proof" workload '...'
 ```
 
-Lokálne ho vyskúšaš cez `make images test IMAGE_TAG=local` (postaví služby z
-`main`), potom `make test-down`.
+Lokálne ho vyskúšaš cez `make dev-test` (postaví služby z tvojich pracovných
+kópií) alebo `make images test IMAGE_TAG=local` (z `main`), potom `make test-down`.
 
 ## Nová služba
 
@@ -127,13 +133,16 @@ Príklad: `pouw-node` dostane `Dockerfile`.
    `main` publikuje `ghcr.io/pouw-zk/pouw-node:main` a `:sha-<7>`. Server
    sťahuje bez prihlásenia, takže balíček v GHCR musí byť verejný
    (organizácia → Packages → pouw-node → Package settings → visibility).
-2. V `compose.yml`: odkomentuj alebo pridaj službu s
-   `image: ghcr.io/pouw-zk/pouw-node:${NODE_VERSION:-main}` a healthcheckom.
-   Porty na hostiteľovi iba ak sú naozaj potrebné; vtedy na `127.0.0.1` a v
-   `compose.test.yml` ich vypni cez `ports: !reset []`.
-3. Nové heslá: pozri časť Heslá vyššie.
-4. Metriky: scrape job v `monitoring/prometheus/prometheus.yml`.
-5. Testy: kontroly v `e2e/smoke.sh`.
+2. Lokálne over, že sa služba postaví a nabehne spolu so sieťou: `make dev`
+   v `pouw-deploy` (postaví ju z tvojej pracovnej kópie).
+3. Keď je obraz v GHCR, v `compose.yml` pri službe zmaž riadok
+   `profiles: [network]`. Odvtedy ju spúšťa `make up`, večerný test aj staging.
+   Nová služba dostane `image: ghcr.io/pouw-zk/<repo>:${<MENO>_VERSION:-main}`
+   a healthcheck. Porty na hostiteľovi iba ak sú naozaj potrebné; vtedy na
+   `127.0.0.1` a v `compose.test.yml` ich vypni cez `ports: !reset []`.
+4. Nové heslá: pozri časť Heslá vyššie.
+5. Metriky: scrape job v `monitoring/prometheus/prometheus.yml`.
+6. Testy: kontroly v `e2e/smoke.sh` alebo `e2e/test_*.py` v repozitári služby.
 
 `scripts/build-images.sh`, `Makefile` (`IMAGE_TAG`) a `remote.sh` už poznajú
 `pouw-node`, `pouw-indexer`, `pouw-workload` a `pouw-dashboard`. Službu s novým
@@ -184,7 +193,8 @@ docker compose exec jenkins-docker docker system prune -af
 | PR nespúšťajú buildy | zlá URL alebo secret webhooku | GitHub App → Advanced → Recent Deliveries ukáže chybu |
 | Bez certifikátu, prehliadač hlási chybu TLS | zatvorené porty 80/443 alebo DNS neukazuje na server | `make logs s=proxy`, zvonka `nc -vz <ip> 443` |
 | Večerné nasadenie: `Deploy workflow run not found` | GitHub App nemá Actions: Read and write | nastavenia aplikácie → Permissions, potom potvrď zmenu v inštalácii |
-| Beh Deploy zlyhá na SSH | zlé hodnoty `DEPLOY_*`, chýba riadok v `authorized_keys` alebo je port 22 zvonka zatvorený | pozri časť 7 v [inštalácii](instalacia.md) |
+| Beh Deploy čaká (`Waiting for a runner`) | runner na serveri nebeží | `sudo systemctl status 'actions.runner.*'` na serveri; znova `sudo ./scripts/runner-setup.sh <token>` |
+| Beh Deploy zlyhá na SSH | zlé hodnoty `DEPLOY_*` (host je `127.0.0.1`) alebo chýba riadok v `authorized_keys` | pozri časť 7 v [inštalácii](instalacia.md) |
 | Beh Deploy: `Commit ... is not in main` | `sha` je z inej vetvy | použi commit z `main` |
 | Workflow Security padá na DS-0002 | z `agent.Dockerfile` zmizol riadok `trivy:ignore` | vráť ho nad `USER root` |
 | `pass` hlási `Please tell me who you are` | stará verzia `pass-init.sh` bez git identity | `pass git config user.name "PoUW server"`, `pass git config user.email pouw@$(hostname)`, `pass git add -A && pass git commit -m "Add secrets"` |
@@ -192,3 +202,4 @@ docker compose exec jenkins-docker docker system prune -af
 | Lokálny Jenkins: `No rule to make target 'check'` | job vytvorený v UI s vloženým skriptom nemá checkout | používaj job `pouw-deploy` z CasC, job z UI zmaž |
 | Lokálny Jenkins sa nedostane na GitHub | pokazená sieť Docker Desktop | reštartuj Docker Desktop; `docker run --rm curlimages/curl -sI https://github.com` |
 | `make test`: `port is already allocated` | nová služba publikuje port na hostiteľovi | pridaj ju do `compose.test.yml` s `ports: !reset []` |
+| `make dev`: `no ../pouw-xxx, skipped`, potom `pull access denied` | repozitár služby nie je naklonovaný vedľa `pouw-deploy` | `.github/scripts/sync-repos.sh` |

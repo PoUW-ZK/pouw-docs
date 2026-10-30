@@ -185,3 +185,7 @@ Subsquid
 maturin
 wasmtime
 precomputation
+dashboardy
+healthcheck
+naklonované
+naklonovaný
