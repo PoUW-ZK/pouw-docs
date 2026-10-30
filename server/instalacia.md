@@ -27,7 +27,8 @@ ip -4 -br addr                   # musí obsahovať tú istú IP, inak je server
 ```
 
 **Porty.** 80 a 443 musia byť dostupné z internetu (Let's Encrypt a webhooky
-z GitHubu), 22 z GitHub Actions (nasadenie). Z počítača mimo servera:
+z GitHubu). Port 22 je na sieti FIIT zvonka zatvorený a nevadí to: nasadenie
+beží na self-hosted runneri priamo na serveri (časť 7). Z počítača mimo servera:
 
 ```bash
 nc -vz 147.175.151.18 443   # "Connection refused" je pred spustením v poriadku, timeout nie
@@ -170,7 +171,7 @@ univerzitné heslo sem nevkladaj.
 ```bash
 cd ~/pouw/pouw-deploy
 cat > .env <<'EOF'
-COMPOSE_PROFILES=jenkins,proxy
+COMPOSE_PROFILES=jenkins,proxy,host-metrics
 SECRETS_SOURCE=pass
 SECRETS_DIR=/run/pouw-secrets
 
@@ -190,7 +191,7 @@ make ps      # všetko Up, jenkins/grafana/prometheus (healthy)
 
 | Premenná | Význam |
 | --- | --- |
-| `COMPOSE_PROFILES` | na serveri `jenkins,proxy`; bez profilu beží iba monitoring |
+| `COMPOSE_PROFILES` | na serveri `jenkins,proxy,host-metrics` (`host-metrics` = node-exporter a cAdvisor); bez profilu beží iba databáza a monitoring; Hasura a služby siete pribudnú s profilom `network` |
 | `SECRETS_SOURCE`, `SECRETS_DIR` | heslá z `pass`, dešifrované do tmpfs |
 | `JENKINS_HOST`, `GRAFANA_HOST` | mená, na ktoré proxy odpovedá a pre ktoré získa certifikát |
 | `JENKINS_URL`, `GRAFANA_URL` | verejné adresy; lomka na konci je povinná |
@@ -202,33 +203,52 @@ make ps      # všetko Up, jenkins/grafana/prometheus (healthy)
 
 ## 7. Nasadenie z GitHubu
 
-Večerné nasadenie aj ručný workflow Deploy sa na server pripájajú cez SSH.
-Kľúč smie spustiť iba `scripts/remote.sh`.
+Port 22 je zvonka zatvorený, takže GitHub sa na server pripojiť nevie. Workflow
+Deploy preto beží na self-hosted runneri priamo na serveri: runner sa sám
+pripája na GitHub cez HTTPS a preberá úlohy. Úloha sa potom cez SSH pripojí na
+`127.0.0.1` kľúčom, ktorý smie spustiť iba `scripts/remote.sh`.
 
-1. Na notebooku vytvor kľúč iba na tento účel:
+1. Runner. Na notebooku získaj registračný token (platí hodinu):
+
+   ```bash
+   gh api -X POST repos/PoUW-ZK/pouw-deploy/actions/runners/registration-token --jq .token
+   ```
+
+   a na serveri ho nainštaluj:
+
+   ```bash
+   cd ~/pouw/pouw-deploy
+   sudo ./scripts/runner-setup.sh <token>
+   ```
+
+   Runner beží ako systémový používateľ `gh-runner` (bez `sudo`, mimo skupiny
+   `docker`) so štítkom `staging`. Na GitHube ho uvidíš v pouw-deploy →
+   Settings → Actions → Runners ako **Idle**.
+
+2. Na notebooku vytvor kľúč iba na nasadenie:
 
    ```bash
    ssh-keygen -t ed25519 -N '' -C github-actions -f deploy_key
    ```
 
-2. Na serveri pridaj do `~/.ssh/authorized_keys` jeden riadok (cesta musí presne sedieť):
+3. Na serveri pridaj do `~/.ssh/authorized_keys` jeden riadok (cesta musí presne sedieť):
 
    ```text
    command="/home/ubuntu/pouw/pouw-deploy/scripts/remote.sh",restrict ssh-ed25519 AAAA... github-actions
    ```
 
-3. Na GitHube: pouw-deploy → Settings → Environments → **New environment** `staging`.
+4. Na GitHube: pouw-deploy → Settings → Environments → **New environment** `staging`.
    Nepridávaj required reviewers, inak by večerné nasadenie čakalo na človeka.
 
    | Druh | Meno | Hodnota |
    | --- | --- | --- |
    | Secret | `DEPLOY_SSH_KEY` | obsah súboru `deploy_key` (súkromný kľúč) |
-   | Variable | `DEPLOY_HOST` | `147.175.151.18` |
+   | Variable | `DEPLOY_HOST` | `127.0.0.1` |
    | Variable | `DEPLOY_USER` | `ubuntu` |
-   | Variable | `DEPLOY_KNOWN_HOSTS` | výstup `ssh-keyscan -t ed25519 147.175.151.18` |
+   | Variable | `DEPLOY_KNOWN_HOSTS` | výstup `echo "127.0.0.1 $(cut -d' ' -f1,2 /etc/ssh/ssh_host_ed25519_key.pub)"` na serveri |
 
-4. Zmaž `deploy_key` a `deploy_key.pub` z notebooku.
-5. Vyskúšaj: GitHub → Actions → **Deploy** → Run workflow → akcia `status`.
+5. Zmaž `deploy_key` a `deploy_key.pub` z notebooku.
+6. Vyskúšaj: GitHub → Actions → **Deploy** → Run workflow → akcia `status`.
    V súhrne behu je nasadený commit a zoznam kontajnerov.
 
 ## 8. Záverečné kontroly
@@ -237,7 +257,7 @@ Kľúč smie spustiť iba `scripts/remote.sh`.
    priečinku **PoUW-ZK** je `pouw-deploy` s vetvou `main`. Ak je prázdny,
    otvor priečinok → **Scan Organization Now**.
 2. Prvý build `main` skončí zelený. Odvtedy je zaregistrovaný večerný časovač.
-3. Actions → Deploy → `status` funguje (časť 7).
+3. Runner je **Idle** a Actions → Deploy → `status` funguje (časť 7).
 4. Na notebooku ako vlastník organizácie spusti `./setup-pouw-deploy.sh` z
    koreňa pracovného adresára PoUW-ZK. Kontrola z Jenkinsu sa tým stane
    povinnou pre PR v `pouw-deploy`.

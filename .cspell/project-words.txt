@@ -150,6 +150,7 @@ Aleo
 Barretenberg
 Brakedown
 decommitment
+devnet
 EZKL
 Filecoin
 gnark
@@ -184,3 +185,16 @@ serde
 Subsquid
 urql
 timestamptz
+borsh
+dalek
+Celestia
+IPFS
+newtype
+txids
+maturin
+wasmtime
+precomputation
+dashboardy
+healthcheck
+naklonované
+naklonovaný
