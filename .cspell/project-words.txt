@@ -189,3 +189,10 @@ Celestia
 IPFS
 newtype
 txids
+maturin
+wasmtime
+precomputation
+dashboardy
+healthcheck
+naklonované
+naklonovaný
