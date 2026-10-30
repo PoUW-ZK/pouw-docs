@@ -1,0 +1,14 @@
+# Gitleaks: secret scanning (pre-commit hook + Security workflow).
+# Default rules are kept; add exceptions only after gitleaks actually flags a false positive.
+
+[extend]
+useDefault = true
+
+# The contracts show example JSON with verifying keys, proofs and circuits in
+# base64 (e.g. contracts/node-api.md, "verifying_key"). The generic rule takes
+# such long random strings for API keys. Only that rule is off there: real
+# credentials (AWS, GitHub, private keys, ...) are still detected in contracts/.
+[[allowlists]]
+description = "Example base64 data in the contracts"
+targetRules = ["generic-api-key"]
+paths = ['''(^|/)contracts/[^/]+\.md$''']
