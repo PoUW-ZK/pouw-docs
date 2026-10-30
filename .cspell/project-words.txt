@@ -183,6 +183,8 @@ Metabase
 Polkadot
 serde
 Subsquid
+urql
+timestamptz
 borsh
 dalek
 Celestia
