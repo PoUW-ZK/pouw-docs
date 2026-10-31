@@ -8,7 +8,7 @@
   "devDependencies": {
     "@cspell/dict-sk-sk": "^1.1.7",
     "cspell": "^10.3.6",
-    "markdownlint-cli2": "^0.23.3"
+    "markdownlint-cli2": "^0.24.0"
   },
   "overrides": {
     "smol-toml": "^1.9.1"
