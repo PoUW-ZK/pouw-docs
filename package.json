@@ -6,8 +6,8 @@
     "spell": "cspell --no-progress --show-suggestions \"**/*.md\""
   },
   "devDependencies": {
-    "@cspell/dict-sk-sk": "^1.1.7",
-    "cspell": "^10.3.6",
+    "@cspell/dict-sk-sk": "^1.1.8",
+    "cspell": "^10.4.0",
     "markdownlint-cli2": "^0.24.0"
   },
   "overrides": {
