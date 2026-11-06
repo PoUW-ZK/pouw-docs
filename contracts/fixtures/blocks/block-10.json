@@ -1,0 +1,17 @@
+{
+  "header": {
+    "chain_id": 1,
+    "height": 10,
+    "miner": "addr:43a72e714401762df66b68c26dfbdf2682aaec9f2474eca4613e424a0fbafd3c",
+    "nonce": 6,
+    "parent": "blk:0ac97945cc7c7ee412f291864e746f33232e043d1a8fcc9a423377827175fe4d",
+    "system_id": 0,
+    "target": "0fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "timestamp": 1793600100,
+    "tx_root": "f2b2f05a836b7f4277d8cfd5cf46db32f029b4d30a7c991b2a434614a3066a50",
+    "version": 1
+  },
+  "id": "blk:0d143bd73930c3760af36e5a9551604c38e8977cb94424fc8a210723934d45ae",
+  "proof_txs": [],
+  "txs": []
+}

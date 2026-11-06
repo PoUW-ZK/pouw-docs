@@ -448,6 +448,8 @@ leaf up. The leaf is promoted at the first level, so there is one sibling:
 ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015
 ```
 
+Twenty example blocks of the current proof-of-work node, in the JSON view, are in [fixtures](fixtures/README.md).
+
 ## Open points
 
 | Point | Decides |

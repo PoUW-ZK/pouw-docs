@@ -1,0 +1,31 @@
+{
+  "header": {
+    "chain_id": 1,
+    "height": 17,
+    "miner": "addr:66be7e332c7a453332bd9d0a7f7db055f5c5ef1a06ada66d98b39fb6810c473a",
+    "nonce": 47,
+    "parent": "blk:0aecec1450677f0224f873d09c2d41f888636238f387f8f83c35d24bd4787775",
+    "system_id": 0,
+    "target": "0fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "timestamp": 1793600170,
+    "tx_root": "7b85ce675ffa5fa5c56ca7bec561566ee6bfb74f20c1221482f766b59cf57e36",
+    "version": 1
+  },
+  "id": "blk:08e75ca6eb02f74551b2ddcb39448601bf740df072c71e93af9c4583806b20ba",
+  "proof_txs": [],
+  "txs": [
+    {
+      "body": {
+        "amount": 117,
+        "chain_id": 1,
+        "fee": 2,
+        "kind": "transfer",
+        "nonce": 13,
+        "sender": "addr:8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394",
+        "to": "addr:ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d1"
+      },
+      "signature": "5D4kYbGGdLxsTCmAFn/wVvCujO6Lbq00UpvXci9D91rVzEA303cwRyQ2uQI9ATanKwIHdLrdIHiTGKjoBXjrBw==",
+      "txid": "tx:4bcda90119a64308052f84e2def911470765fb2119218384f5a3a776b1261457"
+    }
+  ]
+}

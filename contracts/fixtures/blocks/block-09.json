@@ -1,0 +1,57 @@
+{
+  "header": {
+    "chain_id": 1,
+    "height": 9,
+    "miner": "addr:66be7e332c7a453332bd9d0a7f7db055f5c5ef1a06ada66d98b39fb6810c473a",
+    "nonce": 7,
+    "parent": "blk:0859cd9913ee6206b0550bf48d14d4eef12e1c75e08b90aac5c3c751600e898d",
+    "system_id": 0,
+    "target": "0fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "timestamp": 1793600090,
+    "tx_root": "e0a6f067e74b1353e8582c47e0955da18ac898b20bcb16cc59232e3283888917",
+    "version": 1
+  },
+  "id": "blk:0ac97945cc7c7ee412f291864e746f33232e043d1a8fcc9a423377827175fe4d",
+  "proof_txs": [
+    {
+      "eta": "2864d536fa6c7c5850f3abc57d5c5b58f93e05ceec597606fba56dbd108760",
+      "mask": "d5e77c5cdd589d3ea457b1ba287612393badd116d2bab1e4259c8fcbd741d1",
+      "proof": "bdq/G+UAgTOZgn5GWfGscrhv6xth6s8JEwV6sQ6zj7E=",
+      "proof_hash": "proof:5f88087c019935bae69f02456660928fdec3248eb6294d811aa3c9461bab3366",
+      "proof_system": "groth16",
+      "request": {
+        "body": {
+          "chain_id": 1,
+          "circuit": "circ:91d053a00304d32db9beb427bd012c27cc8b572c49cdc7dd874d7620203adc03",
+          "fee": 5,
+          "kind": "proof_request",
+          "nonce": 3,
+          "public_inputs": [
+            "09090909090909090909090909090909090909090909090909090909090909"
+          ],
+          "sender": "addr:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+          "witness": "AQIDCQ=="
+        },
+        "signature": "tX1D67QlSteyeYPHktXJmecHDW8jx2TXBFIQ+mtdi4p8w6WqcaOv9XqX6lhAtSI+QSXfOxjZOjdXx5+6zwwMCw==",
+        "txid": "tx:d37d4aeeeb542f90a7eced7c120d186f6faf1017f211b3108143045fd3f14b32"
+      },
+      "request_txid": "tx:d37d4aeeeb542f90a7eced7c120d186f6faf1017f211b3108143045fd3f14b32",
+      "usage_counter": 1
+    }
+  ],
+  "txs": [
+    {
+      "body": {
+        "amount": 109,
+        "chain_id": 1,
+        "fee": 2,
+        "kind": "transfer",
+        "nonce": 7,
+        "sender": "addr:8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394",
+        "to": "addr:ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d1"
+      },
+      "signature": "hsv+KL6TG+fQPx5Rms5E05Wuc4R2nADa7mJlGh8/zIex7IcUZmnm7t5pDgcRSRQWrSgqHhjKM3ywD8OY1Wc9CA==",
+      "txid": "tx:be4951722bd902fa1a4b943f3ba2aaa78684e9d97760816110ce942d88d3c1c7"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "header": {
+    "chain_id": 1,
+    "height": 12,
+    "miner": "addr:43a72e714401762df66b68c26dfbdf2682aaec9f2474eca4613e424a0fbafd3c",
+    "nonce": 3,
+    "parent": "blk:0f948f397c273606c171c4e5aaeb3ad94fa467732e6701be6bbbf2a0e3a3a46f",
+    "system_id": 0,
+    "target": "0fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "timestamp": 1793600120,
+    "tx_root": "657f083b771fca926aa34694441bd99637b7228c304f3b3b14bb85f8f3427f24",
+    "version": 1
+  },
+  "id": "blk:00eff1770dd9b7676812a18c637df07ab7017cc0e88cf5087c50910c521f13ed",
+  "proof_txs": [
+    {
+      "eta": "88a374855fc34fa2106b9c127989eede1605cef5f1c4d9a4a3354f5135cc9d",
+      "mask": "aee639e958654dfcfe07be680b295e44d2f1e07c0111de22baabb5bbeae162",
+      "proof": "SpzOe0BH6fJCaMXvjtrVmPFAhpT7j1bUrznmkGBGlUg=",
+      "proof_hash": "proof:4958523be25ec4f970b312eba3dfba3a712392edf598ce129bbaf7c21e6ef0f3",
+      "proof_system": "groth16",
+      "request": {
+        "body": {
+          "chain_id": 1,
+          "circuit": "circ:91d053a00304d32db9beb427bd012c27cc8b572c49cdc7dd874d7620203adc03",
+          "fee": 5,
+          "kind": "proof_request",
+          "nonce": 4,
+          "public_inputs": [
+            "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c"
+          ],
+          "sender": "addr:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+          "witness": "AQIDDA=="
+        },
+        "signature": "Vnr2bGY0Xp583C7FsND9Te/X/ZZIzV931KcYYkWHqGm0c9cN3pyo1pnE8rCbKTVA3FFu2WVcRBTEhq4sAAtDDg==",
+        "txid": "tx:63e80507ff3ce2d8f079ee0e6c4aea2b7890e245460b3350ddb7cacfce4ea5c0"
+      },
+      "request_txid": "tx:63e80507ff3ce2d8f079ee0e6c4aea2b7890e245460b3350ddb7cacfce4ea5c0",
+      "usage_counter": 1
+    }
+  ],
+  "txs": [
+    {
+      "body": {
+        "amount": 112,
+        "chain_id": 1,
+        "fee": 2,
+        "kind": "transfer",
+        "nonce": 9,
+        "sender": "addr:8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394",
+        "to": "addr:ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d1"
+      },
+      "signature": "dW+Gye0JXPgx18GbUFHVworNE5yc5v6XvtfBj0BJrd/OV7OF9HY1QaQciLLPlpwj6CcO76iOe6UWOTMAaUZtDQ==",
+      "txid": "tx:466ae315b1e500e9de4d9122e2eb65b47760e9f2ba6d8718afc55f2e60ec6fe4"
+    }
+  ]
+}
