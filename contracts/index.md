@@ -14,6 +14,7 @@ Zmena formátu = pull request, ktorý schváli aspoň jeden člen tímu.
 | block.md          | Block a ProofTx                       | @IliaPoliak, @Ddystopia      |
 | node-events.md    | udalosti, ktoré uzol posiela indexeru | @IliaPoliak, @NotGeorgeLucas |
 | node-api.md       | ako generátor posiela úlohy do uzla   | @IliaPoliak, @Quolen         |
+| light-node-api.md | čítacie API pre ľahkých klientov      | @IliaPoliak, @Quolen         |
 | web-api.graphql   | GraphQL pre webovú aplikáciu          | @v-riazantsev, @ymarochok    |
 | workload-api.yaml | OpenAPI generátora záťaže             | @Quolen, @ymarochok          |
 | metrics.md        | metriky pre Prometheus                | @Faustynn a autori služieb   |
