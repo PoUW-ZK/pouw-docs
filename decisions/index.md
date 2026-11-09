@@ -31,3 +31,4 @@ Každé dôležité technické rozhodnutie zapíšeme ako ADR, aby sme sa k nemu
 | [ADR-0005](0005-https-cez-caddy.md)               | HTTPS cez Caddy a sslip.io, ostatné porty iba lokálne                      |
 | [ADR-0011](0011-adr-vstupy-v-bloku.md)            | witness inputs travel inside the proof request and are stored in the block |
 | [ADR-0010](0010-adr-lahky-klient.md)              | light client as a Rust crate of pouw-node, used by the workload generator  |
+| [ADR-0009](0009-explorer-v0-scope.md)             | explorer v0: 7 screens, Hasura GraphQL over views of the indexer database  |

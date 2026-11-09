@@ -6,7 +6,7 @@ nav_order: 9
 
 # ADR-0009: PoUW Explorer v0 Scope, Screen Specifications, and Data Architecture
 
-**Status:** proposed  
+**Status:** accepted  
 **Date:** 2026-10-17  
 **Author:** @v-riazantsev
 
