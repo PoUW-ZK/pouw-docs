@@ -6,6 +6,8 @@ info:
 servers:
   - url: http://localhost:8000
     description: Local workload generator
+  - url: http://localhost:8000/api/v1
+    description: Versioned workload API (health and metrics use their own servers)
 paths:
   /health:
     get:
@@ -81,7 +83,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /stop:
     post:
-      summary: Stop the running scenario
+      summary: Stop scheduling and drain in-flight reads
       operationId: stopScenario
       responses:
         '202':
@@ -111,11 +113,11 @@ paths:
           $ref: '#/components/responses/InternalServerError'
   /results:
     get:
-      summary: Download test results
+      summary: Download per-operation read results from the last completed run
       operationId: downloadResults
       responses:
         '200':
-          description: CSV file containing test results.
+          description: CSV with operation, completed, failures, rejected, p50_us, p95_us, p99_us.
           content:
             text/csv:
               schema:
@@ -172,35 +174,55 @@ components:
       type: object
       required:
         - status
-        - sent_tasks
-        - included_tasks
-        - rejected_tasks
-        - avg_time_to_inclusion
+        - operations
       properties:
         status:
           type: string
           description: Current generator state.
           enum:
             - running
+            - stopping
             - stopped
             - error
-        sent_tasks:
+        scenario:
+          type: string
+          nullable: true
+        error:
+          type: string
+          nullable: true
+        operations:
+          type: object
+          description: Live statistics keyed by read operation, reset for each run.
+          additionalProperties:
+            $ref: '#/components/schemas/ReadOperationMetrics'
+    ReadOperationMetrics:
+      type: object
+      required: [completed, failures, rejected, p50Micros, p95Micros, p99Micros]
+      properties:
+        completed:
           type: integer
           format: int64
           minimum: 0
-        included_tasks:
+        failures:
           type: integer
           format: int64
           minimum: 0
-        rejected_tasks:
+        rejected:
           type: integer
           format: int64
           minimum: 0
-        avg_time_to_inclusion:
-          type: number
-          format: double
+        p50Micros:
+          type: integer
+          format: int64
           minimum: 0
-          description: Average time from task submission to inclusion, in seconds.
+        p95Micros:
+          type: integer
+          format: int64
+          minimum: 0
+        p99Micros:
+          type: integer
+          format: int64
+          minimum: 0
     ErrorResponse:
       type: object
       required:
