@@ -5,9 +5,9 @@ info:
   description: API for controlling the workload generator and retrieving test results.
 servers:
   - url: http://localhost:8000
-    description: Local workload generator
+    description: Unprefixed control routes on the local workload generator.
   - url: http://localhost:8000/api/v1
-    description: Versioned workload API (health and metrics use their own servers)
+    description: Versioned aliases for the control routes (not health or metrics).
 paths:
   /health:
     get:
@@ -114,6 +114,10 @@ paths:
   /results:
     get:
       summary: Download per-operation read results from the last completed run
+      description: >
+        Results are cleared when a new scenario starts. They are available
+        after that scenario finishes or stops with a result; stopping before
+        scheduling begins does not produce one.
       operationId: downloadResults
       responses:
         '200':
@@ -124,7 +128,7 @@ paths:
                 type: string
                 format: binary
         '404':
-          description: No results are available.
+          description: No result is available for the most recently started scenario.
           content:
             application/json:
               schema:
@@ -192,7 +196,11 @@ components:
           nullable: true
         operations:
           type: object
-          description: Live statistics keyed by read operation, reset for each run.
+          description: >
+            Live statistics keyed by uppercase read operation name, reset for
+            each run. Percentiles use planned-send-to-response latency in
+            microseconds. JSON percentile field names use camelCase, whereas
+            the CSV output currently uses snake_case names ending in _us.
           additionalProperties:
             $ref: '#/components/schemas/ReadOperationMetrics'
     ReadOperationMetrics:
@@ -203,26 +211,42 @@ components:
           type: integer
           format: int64
           minimum: 0
+          description: >
+            Reads that completed, including reads that failed. Rejected
+            dispatches are not included.
         failures:
           type: integer
           format: int64
           minimum: 0
+          description: >
+            Failed read completions, including node HTTP errors, connection
+            failures, timeouts, and response decoding errors. An out-of-range
+            latency also increments this counter, so a failed read with such
+            a latency can increment it twice. Expected negative reads are not
+            yet classified separately.
         rejected:
           type: integer
           format: int64
           minimum: 0
+          description: >
+            Scheduled dispatches not accepted by the generator because the
+            concurrency limit was reached or the executor rejected them.
+            This is not a node HTTP rejection.
         p50Micros:
           type: integer
           format: int64
           minimum: 0
+          description: 50th percentile latency in microseconds.
         p95Micros:
           type: integer
           format: int64
           minimum: 0
+          description: 95th percentile latency in microseconds.
         p99Micros:
           type: integer
           format: int64
           minimum: 0
+          description: 99th percentile latency in microseconds.
     ErrorResponse:
       type: object
       required:

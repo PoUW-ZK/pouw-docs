@@ -85,7 +85,7 @@ All paths have the prefix `/v1` except `/health` and `/metrics`.
 
 | Method | Path | Purpose | Called by |
 | --- | --- | --- | --- |
-| POST | `/v1/txs` | submit a signed transaction as borsh or JSON, answer 202 with the txid | clients, workload generator, light client |
+| POST | `/v1/txs` | submit a signed transaction as borsh or JSON, answer 202 with the txid | clients, light client |
 | GET | `/v1/txs/{txid}` | the tx, its status and, for an included proof request, the derived fields | clients, indexer |
 | GET | `/v1/txs/{txid}/inclusion-proof` | Merkle inclusion proof of an included tx | light clients |
 | GET | `/v1/blocks/head` | header of the tip with `hash` | clients, light clients |
@@ -93,7 +93,7 @@ All paths have the prefix `/v1` except `/health` and `/metrics`.
 | GET | `/v1/blocks/{height_or_hash}/header` | header of one block | light clients |
 | GET | `/v1/blocks?from=&to=` | blocks as a JSON list or length-prefixed borsh, at most 100 per call | indexer |
 | GET | `/v1/headers?from=&to=` | headers as a JSON list, at most 1000 per call | light clients |
-| GET | `/v1/circuits` | registry entries, without blobs unless `?include=keys` | clients, workload generator |
+| GET | `/v1/circuits` | registry entries, without blobs unless `?include=keys` | clients |
 | GET | `/v1/circuits/{circuit_id}` | one registry entry | clients, miners |
 | GET | `/v1/accounts/{addr}` | balance and nonce | clients, light clients |
 | GET | `/v1/mempool` | pending txids and counts | clients, dashboards |
@@ -292,26 +292,10 @@ A rejected submission answers 422, for example:
 
 ## For the workload generator
 
-The generator signs with its own key and posts borsh. The node holds no key for
-it. The generator sends a `WorkloadTask {task_id, circuit_type, circuit_size,
-proof_system, fee, client_id}` ([pouw-workload PR #15],
-[pouw-workload#7]). It
-becomes a `POST /v1/txs` call as follows:
-
-| WorkloadTask field | In the API |
-| --- | --- |
-| `circuit_type`, `circuit_size` | select a registered circuit id from the catalog. The generator keeps the table (circuit_type, circuit_size) to `circ:` id, filled when it registers the catalog circuits, and can check it with `GET /v1/circuits` (`constraint_count`) |
-| `proof_system` | follows from the circuit. The generator can check it against `system` in the registry entry |
-| `fee` | `body.fee` |
-| `client_id` | selects the signing key. `body.sender` is its address and `body.nonce` comes from `GET /v1/accounts/{addr}` |
-| `task_id` | the txid the node returns in the 202 answer |
-
-The task has no input values. The generator builds `public_inputs` and
-`witness` for the chosen circuit type.
-
-Python has the libraries for this: `borsh-construct` for the encoding and
-`pynacl` for Ed25519. The test vectors in [block.md][block-test-vectors]
-give the exact bytes, the signature and the txid to check an encoder against.
+The current Java workload generator performs read-only scenarios. It does not
+sign or submit transactions or proof tasks. It reads chain, account and
+transaction data and measures throughput, latency and errors. Its control API
+and read statistics are described in [workload-api.yaml](workload-api.yaml).
 
 ## JSON view
 
@@ -496,8 +480,6 @@ changing a meaning, bumps the prefix to `/v2`. Clients ignore unknown fields.
 - [node-events.md], the event log read through `/v1/events`.
 - [ADR-0007], stored and derived fields.
 - [ADR-0008], the node returns decoded views and derived fields.
-- [pouw-workload#7], task format for the node.
-- [pouw-workload PR #15], the current generator.
 
 [Kontrakty]: index.md
 [node-api.yaml]: node-api.yaml
@@ -505,8 +487,5 @@ changing a meaning, bumps the prefix to `/v2`. Clients ignore unknown fields.
 [node-events.md]: node-events.md
 [JSON view]: #json-view
 [block-inclusion-proof]: block.md#inclusion-proof
-[pouw-workload PR #15]: https://github.com/PoUW-ZK/pouw-workload/pull/15
-[pouw-workload#7]: https://github.com/PoUW-ZK/pouw-workload/issues/7
-[block-test-vectors]: block.md#test-vectors
 [ADR-0007]: ../decisions/0007-ulozene-a-odvodene-polia.md
 [ADR-0008]: ../decisions/0008-indexer-a-explorer.md
