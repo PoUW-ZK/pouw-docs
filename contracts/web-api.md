@@ -275,6 +275,7 @@ All operations are in [web-api.graphql].
 | Screen               | Operations                               | Live                  |
 | -------------------- | ---------------------------------------- | --------------------- |
 | 1. Home              | `HomeStats`, `LatestBlocks`, `Search`    | the two subscriptions |
+| Live lists           | `NewBlocks`, `NewTransfers`, `NewProofs` | streams, see below    |
 | 2. Block             | `BlockByHeight`, `BlockByHash`, `Blocks` | no                    |
 | 3. Transaction       | `Transaction`                            | no                    |
 | 4. Proof transaction | `Proof`                                  | no                    |
@@ -296,6 +297,35 @@ Rules for the operations:
 - Any query can be a subscription, with the same selection. The two
   subscriptions listed above are the ones the home screen needs; other screens
   load once.
+
+## Live updates
+
+Two kinds of subscription, both over the WebSocket of [Calling it](#calling-it):
+
+- **Live query** (`HomeStats`, `LatestBlocks`): sends the whole result again
+  whenever it changes. For a small result that is replaced on screen.
+- **Stream** (`NewBlocks`, `NewTransfers`, `NewProofs`): sends only the rows
+  after a cursor, oldest first, in batches of at most `$batchSize`. For a list
+  that grows at the top. Root fields `blocks_stream`, `transfers_stream` and
+  `proofs_stream` exist only in subscriptions.
+
+A list with a stream:
+
+1. Load the newest rows: `Blocks` (or `LatestBlocks`), `LatestTransfers`,
+   `LatestProofs`.
+2. Subscribe from the newest row you have: `NewBlocks` with
+   `fromHeight` = its `height`, `NewTransfers` and `NewProofs` with
+   `fromSortKey` = its `sort_key`. With no rows yet, pass `-1` or `""`.
+3. Put every batch that arrives on top of the list. The stream moves its
+   cursor by itself; a reconnect starts again at step 1.
+
+Hasura checks for new rows about once a second, so a new block reaches the
+browser within 2 seconds of being written to the database. The query tests
+check that (`hasura/tests/test_live.py` in pouw-dashboard).
+
+Streams carry canonical rows only and never send a row twice. A reorg does not
+reach them: when a `height` arrives that is not one above the last one, load
+the list again (step 1).
 
 ## Limits and permissions
 
