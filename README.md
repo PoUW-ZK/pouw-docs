@@ -6,11 +6,8 @@
 index.md        úvodná stránka webu
 tim.md          tím a role
 architecture/   architektúra systému
-contracts/      spoločné formáty dát a API medzi komponentmi
-meetings/       zápisnice zo stretnutí (šablóna TEMPLATE.md)
+meetings/       zápisnice zo stretnutí
 decisions/      architektonické rozhodnutia, ADR (šablóna TEMPLATE.md)
-learning/       študijné poznámky z onboardingu
-report/         záverečná správa v LaTeX (nie je súčasťou webu)
 ```
 
 ## Lokálne spustenie
